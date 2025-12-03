@@ -130,7 +130,7 @@ class ImplantInventory(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Dental Implant Inventory Manager")
-        self.setGeometry(200, 200, 800, 400)
+        self.setGeometry(200, 200, 1200, 600)
 
         self.inventory = []
         self.load_data()
@@ -149,9 +149,9 @@ class ImplantInventory(QWidget):
 
         # Table
         self.table = QTableWidget()
-        self.table.setColumnCount(10)
+        self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels([
-            "Brand", "Type", "Platform", "Width", "Length", "Expiry", "Qty", "REF", "LOT", "Status"
+            "Brand", "Type", "Platform", "Width", "Length", "Total Qty", "Most Recent Expiry", "Most Recent Expiry Qty", "Status"
         ])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.table)
@@ -203,10 +203,80 @@ class ImplantInventory(QWidget):
             self.inventory.append(implant)
             self.update_table()
 
+    def _get_condensed_inventory(self):
+        """
+        Groups implants by brand, type, platform, width, and length.
+        Returns a list of condensed implants with:
+        - Total quantity across all matching implants
+        - Most recent expiry date
+        - Count of implants with that most recent expiry date
+        """
+        grouped = {}
+        
+        for implant in self.inventory:
+            # Create a key from the grouping fields
+            key = (
+                implant["brand"],
+                implant["type"],
+                implant["platform"],
+                implant["width"],
+                implant["length"]
+            )
+            
+            if key not in grouped:
+                grouped[key] = {
+                    "brand": implant["brand"],
+                    "type": implant["type"],
+                    "platform": implant["platform"],
+                    "width": implant["width"],
+                    "length": implant["length"],
+                    "total_qty": 0,
+                    "expiries": []  # List of (expiry_date, qty) tuples
+                }
+            
+            grouped[key]["total_qty"] += implant["qty"]
+            grouped[key]["expiries"].append({
+                "date": implant["expiry"],
+                "qty": implant["qty"]
+            })
+        
+        # Process grouped data to find most recent expiry
+        condensed = []
+        for implant_group in grouped.values():
+            # Sort expiries by date (most recent first)
+            expiries_sorted = sorted(
+                implant_group["expiries"],
+                key=lambda x: datetime.strptime(x["date"], "%Y-%m-%d"),
+                reverse=True
+            )
+            
+            most_recent_expiry = expiries_sorted[0]["date"]
+            # Count how many implants have the most recent expiry date
+            most_recent_count = sum(
+                e["qty"] for e in expiries_sorted 
+                if e["date"] == most_recent_expiry
+            )
+            
+            condensed_item = {
+                "brand": implant_group["brand"],
+                "type": implant_group["type"],
+                "platform": implant_group["platform"],
+                "width": implant_group["width"],
+                "length": implant_group["length"],
+                "total_qty": implant_group["total_qty"],
+                "most_recent_expiry": most_recent_expiry,
+                "most_recent_expiry_qty": most_recent_count
+            }
+            condensed.append(condensed_item)
+        
+        return condensed
+
     def update_table(self):
         self.table.setRowCount(0)
         now = datetime.now()
-        for implant in self.inventory:
+        condensed_inventory = self._get_condensed_inventory()
+
+        for implant in condensed_inventory:
             row = self.table.rowCount()
             self.table.insertRow(row)
             self.table.setItem(row, 0, QTableWidgetItem(implant["brand"]))
@@ -214,21 +284,27 @@ class ImplantInventory(QWidget):
             self.table.setItem(row, 2, QTableWidgetItem(implant["platform"]))
             self.table.setItem(row, 3, QTableWidgetItem(implant["width"]))
             self.table.setItem(row, 4, QTableWidgetItem(implant["length"]))
-            self.table.setItem(row, 5, QTableWidgetItem(implant["expiry"]))
-            self.table.setItem(row, 6, QTableWidgetItem(str(implant["qty"])))
-            self.table.setItem(row, 7, QTableWidgetItem(implant["ref"]))
-            self.table.setItem(row, 8, QTableWidgetItem(implant["lot"]))
+            self.table.setItem(row, 5, QTableWidgetItem(str(implant["total_qty"])))
+            self.table.setItem(row, 6, QTableWidgetItem(implant["most_recent_expiry"]))
+            self.table.setItem(row, 7, QTableWidgetItem(str(implant["most_recent_expiry_qty"])))
+
             # Status column
             try:
-                expiry_date = datetime.strptime(implant["expiry"], "%Y-%m-%d")
+                expiry_date = datetime.strptime(implant["most_recent_expiry"], "%Y-%m-%d")
             except Exception:
                 expiry_date = None
             status = ""
-            if implant["qty"] <= 2:
-                status = "⚠ Low Stock"
-            elif expiry_date and (expiry_date - now).days < 180:
-                status = "⚠ Expiring Soon"
-            self.table.setItem(row, 9, QTableWidgetItem(status))
+            if implant["total_qty"] <= 2:
+                if status == "":
+                    status = "⚠ Low Stock"
+                else:
+                    status += ", Low Stock"
+            if expiry_date and (expiry_date - now).days < 180:
+                if status == "":
+                    status = "⚠ Expiring Soon"
+                else:
+                    status += ", Expiring Soon"
+            self.table.setItem(row, 8, QTableWidgetItem(status))
 
     def closeEvent(self, event):
         reply = QMessageBox.question(
