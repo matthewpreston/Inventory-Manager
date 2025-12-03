@@ -10,9 +10,8 @@ from PyQt6.QtWidgets import (
 
 DATA_FILE = "implants.csv"
 
-
 # Dialog for implant input
-class ImplantDialog(QDialog):
+class AddImplantDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Add Implant")
@@ -135,12 +134,7 @@ class RemoveImplantDialog(QDialog):
         self.setGeometry(300, 300, 700, 400)
         
         self.inventory = inventory
-        self.brand = brand
-        self.type_ = type_
-        self.platform = platform
-        self.width = width
-        self.length = length
-        
+
         # Get all matching implants from inventory
         self.matching_implants = [
             implant for implant in inventory
@@ -257,14 +251,14 @@ class ImplantInventory(QWidget):
         btn_layout = QHBoxLayout()
         add_btn = QPushButton("Add Implant")
         add_btn.clicked.connect(self.add_implant)
-        save_btn = QPushButton("Save Inventory")
-        save_btn.clicked.connect(self.save_data)
         self.remove_btn = QPushButton("Remove Implant")
         self.remove_btn.clicked.connect(self.remove_implant)
         self.remove_btn.setEnabled(False)  # Disabled by default
+        save_btn = QPushButton("Save Inventory")
+        save_btn.clicked.connect(self.save_data)
         btn_layout.addWidget(add_btn)
-        btn_layout.addWidget(save_btn)
         btn_layout.addWidget(self.remove_btn)
+        btn_layout.addWidget(save_btn)
         layout.addLayout(btn_layout)
 
         # Table
@@ -281,7 +275,7 @@ class ImplantInventory(QWidget):
         self.update_table()
         
     def add_implant(self):
-        dialog = ImplantDialog(self)
+        dialog = AddImplantDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             data = dialog.get_data()
             brand = data["brand"]
@@ -446,7 +440,7 @@ class ImplantInventory(QWidget):
         now = datetime.now()
         condensed_inventory = self._get_condensed_inventory()
 
-        for implant in condensed_inventory:
+        for implant in sorted(condensed_inventory, key=lambda x: (x["brand"], x["type"], x["platform"], x["width"], x["length"], x["most_recent_expiry"])):
             row = self.table.rowCount()
             self.table.insertRow(row)
             self.table.setItem(row, 0, QTableWidgetItem(implant["brand"]))
