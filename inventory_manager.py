@@ -8,7 +8,9 @@ from PyQt6.QtWidgets import (
     QSpinBox, QTabWidget
 )
 
-DATA_FILE = "implants.csv"
+IMPLANTS_FILE = "implants.csv"
+ABUTMENTS_FILE = "abutments.csv"
+BONE_GRAFTS_FILE = "bone_grafts.csv"
 
 # Dialog for implant input
 class AddImplantDialog(QDialog):
@@ -619,8 +621,8 @@ class ImplantInventory(QWidget):
         self.remove_implant_btn = QPushButton("Remove Implant")
         self.remove_implant_btn.clicked.connect(self.remove_implant)
         self.remove_implant_btn.setEnabled(False)
-        self.save_implants_btn = QPushButton("Save Inventory")
-        self.save_implants_btn.clicked.connect(self.save_data)
+        self.save_implants_btn = QPushButton("Save All")
+        self.save_implants_btn.clicked.connect(self.save_all_data)
         implants_btn_layout.addWidget(self.add_implant_btn)
         implants_btn_layout.addWidget(self.remove_implant_btn)
         implants_btn_layout.addWidget(self.save_implants_btn)
@@ -647,8 +649,8 @@ class ImplantInventory(QWidget):
         self.remove_abutment_btn = QPushButton("Remove Healing Abutment")
         self.remove_abutment_btn.clicked.connect(self.remove_abutment)
         self.remove_abutment_btn.setEnabled(False)
-        self.save_abutments_btn = QPushButton("Save Inventory")
-        self.save_abutments_btn.clicked.connect(self.save_data)
+        self.save_abutments_btn = QPushButton("Save All")
+        self.save_abutments_btn.clicked.connect(self.save_all_data)
         abutments_btn_layout.addWidget(self.add_abutment_btn)
         abutments_btn_layout.addWidget(self.remove_abutment_btn)
         abutments_btn_layout.addWidget(self.save_abutments_btn)
@@ -675,8 +677,8 @@ class ImplantInventory(QWidget):
         self.remove_bone_graft_btn = QPushButton("Remove Bone Graft")
         self.remove_bone_graft_btn.clicked.connect(self.remove_bone_graft)
         self.remove_bone_graft_btn.setEnabled(False)
-        self.save_bone_grafts_btn = QPushButton("Save Inventory")
-        self.save_bone_grafts_btn.clicked.connect(self.save_data)
+        self.save_bone_grafts_btn = QPushButton("Save All")
+        self.save_bone_grafts_btn.clicked.connect(self.save_all_data)
         bone_grafts_btn_layout.addWidget(self.add_bone_graft_btn)
         bone_grafts_btn_layout.addWidget(self.remove_bone_graft_btn)
         bone_grafts_btn_layout.addWidget(self.save_bone_grafts_btn)
@@ -1199,115 +1201,166 @@ class ImplantInventory(QWidget):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
         )
         if reply == QMessageBox.StandardButton.Yes:
-            self.save_data()
+            # Save each product file separately
+            self.save_implants_data()
+            self.save_abutments_data()
+            self.save_bone_grafts_data()
             event.accept()
         elif reply == QMessageBox.StandardButton.No:
             event.accept()
         else:
             event.ignore()
+    def save_implants_data(self):
+        try:
+            with open(IMPLANTS_FILE, "w", newline="") as f:
+                writer = csv.writer(f)
+                # Write header
+                writer.writerow(["Brand", "Type", "Platform", "Width", "Length", "Expiry", "Qty", "REF", "LOT"])
+                for implant in self.implants_inventory:
+                    writer.writerow([
+                        implant["brand"],
+                        implant["type"],
+                        implant["platform"],
+                        implant["width"],
+                        implant["length"],
+                        implant["expiry"],
+                        implant["qty"],
+                        implant["ref"],
+                        implant["lot"]
+                    ])
+            QMessageBox.information(self, "Saved", f"Implants saved to {IMPLANTS_FILE}.")
+        except Exception as e:
+            QMessageBox.warning(self, "Save Error", f"Failed to save implants: {e}")
 
-    def save_data(self):
-        with open(DATA_FILE, "w", newline="") as f:
-            writer = csv.writer(f)
-            
-            # Save implants
-            for implant in self.implants_inventory:
-                writer.writerow([
-                    "implant",
-                    implant["brand"],
-                    implant["type"],
-                    implant["platform"],
-                    implant["width"],
-                    implant["length"],
-                    implant["expiry"],
-                    implant["qty"],
-                    implant["ref"],
-                    implant["lot"]
-                ])
-            
-            # Save abutments
-            for abutment in self.abutments_inventory:
-                writer.writerow([
-                    "abutment",
-                    abutment["brand"],
-                    abutment["type"],
-                    abutment["platform"],
-                    abutment["width"],
-                    abutment["height"],
-                    abutment["expiry"],
-                    abutment["qty"],
-                    abutment["ref"],
-                    abutment["lot"]
-                ])
-            
-            # Save bone grafts
-            for bone_graft in self.bone_grafts_inventory:
-                writer.writerow([
-                    "bone_graft",
-                    bone_graft["brand"],
-                    bone_graft["type"],
-                    bone_graft["particulate"],
-                    bone_graft["granule_size"],
-                    bone_graft["amount"],
-                    bone_graft["expiry"],
-                    bone_graft["qty"],
-                    bone_graft["ref"],
-                    bone_graft["lot"],
-                    bone_graft["sn"]
-                ])
-        
-        QMessageBox.information(self, "Saved", "Inventory saved successfully.")
+    def save_abutments_data(self):
+        try:
+            with open(ABUTMENTS_FILE, "w", newline="") as f:
+                writer = csv.writer(f)
+                # Write header
+                writer.writerow(["Brand", "Type", "Platform", "Width", "Height", "Expiry", "Qty", "REF", "LOT"])
+                for abutment in self.abutments_inventory:
+                    writer.writerow([
+                        abutment["brand"],
+                        abutment["type"],
+                        abutment["platform"],
+                        abutment["width"],
+                        abutment["height"],
+                        abutment["expiry"],
+                        abutment["qty"],
+                        abutment["ref"],
+                        abutment["lot"]
+                    ])
+            QMessageBox.information(self, "Saved", f"Healing abutments saved to {ABUTMENTS_FILE}.")
+        except Exception as e:
+            QMessageBox.warning(self, "Save Error", f"Failed to save abutments: {e}")
+
+    def save_bone_grafts_data(self):
+        try:
+            with open(BONE_GRAFTS_FILE, "w", newline="") as f:
+                writer = csv.writer(f)
+                # Write header
+                writer.writerow(["Brand", "Type", "Particulate", "Granule Size", "Amount", "Expiry", "Qty", "REF", "LOT", "SN"])
+                for graft in self.bone_grafts_inventory:
+                    writer.writerow([
+                        graft["brand"],
+                        graft["type"],
+                        graft["particulate"],
+                        graft["granule_size"],
+                        graft["amount"],
+                        graft["expiry"],
+                        graft["qty"],
+                        graft["ref"],
+                        graft["lot"],
+                        graft["sn"]
+                    ])
+            QMessageBox.information(self, "Saved", f"Bone grafts saved to {BONE_GRAFTS_FILE}.")
+        except Exception as e:
+            QMessageBox.warning(self, "Save Error", f"Failed to save bone grafts: {e}")
+
+    def save_all_data(self):
+        """Save all three product files."""
+        self.save_implants_data()
+        self.save_abutments_data()
+        self.save_bone_grafts_data()
+        QMessageBox.information(self, "Saved", "All inventories saved successfully.")
 
     def load_data(self):
+        # Load implants
         try:
-            with open(DATA_FILE, "r") as f:
+            with open(IMPLANTS_FILE, "r") as f:
                 reader = csv.reader(f)
                 for row in reader:
-                    if len(row) == 0:
+                    # Skip header row if present
+                    if not row:
                         continue
-                    
-                    product_type = row[0]
-                    
-                    if product_type == "implant" and len(row) == 10:
-                        self.implants_inventory.append({
-                            "brand": row[1],
-                            "type": row[2],
-                            "platform": row[3],
-                            "width": row[4],
-                            "length": row[5],
-                            "expiry": row[6],
-                            "qty": int(row[7]),
-                            "ref": row[8],
-                            "lot": row[9],
-                            "product_type": "implant"
-                        })
-                    elif product_type == "abutment" and len(row) == 10:
-                        self.abutments_inventory.append({
-                            "brand": row[1],
-                            "type": row[2],
-                            "platform": row[3],
-                            "width": row[4],
-                            "height": row[5],
-                            "expiry": row[6],
-                            "qty": int(row[7]),
-                            "ref": row[8],
-                            "lot": row[9],
-                            "product_type": "abutment"
-                        })
-                    elif product_type == "bone_graft" and len(row) == 11:
-                        self.bone_grafts_inventory.append({
-                            "brand": row[1],
-                            "type": row[2],
-                            "particulate": row[3],
-                            "granule_size": row[4],
-                            "amount": row[5],
-                            "expiry": row[6],
-                            "qty": int(row[7]),
-                            "ref": row[8],
-                            "lot": row[9],
-                            "sn": row[10],
-                            "product_type": "bone_graft"
-                        })
+                    if row[0].strip().lower() == "brand" or (len(row) > 5 and row[5].strip().lower() == "expiry"):
+                        continue
+                    if len(row) != 9:
+                        continue
+                    self.implants_inventory.append({
+                        "brand": row[0],
+                        "type": row[1],
+                        "platform": row[2],
+                        "width": row[3],
+                        "length": row[4],
+                        "expiry": row[5],
+                        "qty": int(row[6]),
+                        "ref": row[7],
+                        "lot": row[8]
+                    })
+        except FileNotFoundError:
+            pass
+
+        # Load abutments
+        try:
+            with open(ABUTMENTS_FILE, "r") as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    # Skip header row if present
+                    if not row:
+                        continue
+                    if row[0].strip().lower() == "brand" or (len(row) > 5 and row[5].strip().lower() == "expiry"):
+                        continue
+                    if len(row) != 9:
+                        continue
+                    self.abutments_inventory.append({
+                        "brand": row[0],
+                        "type": row[1],
+                        "platform": row[2],
+                        "width": row[3],
+                        "height": row[4],
+                        "expiry": row[5],
+                        "qty": int(row[6]),
+                        "ref": row[7],
+                        "lot": row[8]
+                    })
+        except FileNotFoundError:
+            pass
+
+        # Load bone grafts
+        try:
+            with open(BONE_GRAFTS_FILE, "r") as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    # Skip header row if present
+                    if not row:
+                        continue
+                    if row[0].strip().lower() == "brand" or (len(row) > 5 and row[5].strip().lower() == "expiry"):
+                        continue
+                    if len(row) != 10:
+                        continue
+                    self.bone_grafts_inventory.append({
+                        "brand": row[0],
+                        "type": row[1],
+                        "particulate": row[2],
+                        "granule_size": row[3],
+                        "amount": row[4],
+                        "expiry": row[5],
+                        "qty": int(row[6]),
+                        "ref": row[7],
+                        "lot": row[8],
+                        "sn": row[9]
+                    })
         except FileNotFoundError:
             pass
 
