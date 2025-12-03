@@ -69,7 +69,6 @@ class ImplantDialog(QDialog):
         if brand == "Nobel":
             self.type_input = QComboBox()
             self.type_input.addItems([
-                "NobelParallel TiUnite",
                 "NobelParallel TiUltra",
                 "NobelActive TiUltra"
             ])
@@ -78,7 +77,7 @@ class ImplantDialog(QDialog):
             self.platform_input.addItems(["3.0", "RP", "NP", "WP"])
             # Width
             self.width_input = QComboBox()
-            self.width_input.addItems(["3.0", "3.5", "4.3", "5.0", "5.5"])
+            self.width_input.addItems(["3.0", "3.5", "3.75", "4.3", "5.0", "5.5"])
             # Length
             self.length_input = QComboBox()
             self.length_input.addItems(["7.0", "8.5", "10.0", "11.5", "13", "15", "18"])
@@ -127,22 +126,7 @@ class ImplantDialog(QDialog):
             "lot": self.lot_input.text().strip(),
         }
 
-
 class ImplantInventory(QWidget):
-    def closeEvent(self, event):
-        reply = QMessageBox.question(
-            self,
-            "Save Inventory",
-            "Do you want to save the inventory to file before exiting?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
-        )
-        if reply == QMessageBox.StandardButton.Yes:
-            self.save_data()
-            event.accept()
-        elif reply == QMessageBox.StandardButton.No:
-            event.accept()
-        else:
-            event.ignore()
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Dental Implant Inventory Manager")
@@ -174,9 +158,7 @@ class ImplantInventory(QWidget):
 
         self.setLayout(layout)
         self.update_table()
-        self.update_table()
-
-
+        
     def add_implant(self):
         dialog = ImplantDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -247,6 +229,21 @@ class ImplantInventory(QWidget):
             elif expiry_date and (expiry_date - now).days < 180:
                 status = "⚠ Expiring Soon"
             self.table.setItem(row, 9, QTableWidgetItem(status))
+
+    def closeEvent(self, event):
+        reply = QMessageBox.question(
+            self,
+            "Save Inventory",
+            "Do you want to save the inventory to file before exiting?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.save_data()
+            event.accept()
+        elif reply == QMessageBox.StandardButton.No:
+            event.accept()
+        else:
+            event.ignore()
 
     def save_data(self):
         with open(DATA_FILE, "w", newline="") as f:
