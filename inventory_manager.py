@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QTableWidget, QTableWidgetItem,
-    QMessageBox, QHeaderView, QDialog, QDialogButtonBox, QFormLayout, QComboBox, QInputDialog
+    QMessageBox, QHeaderView, QDialog, QDialogButtonBox, QFormLayout, QComboBox, QInputDialog,
+    QSpinBox
 )
 
 DATA_FILE = "implants.csv"
@@ -126,6 +127,118 @@ class ImplantDialog(QDialog):
             "lot": self.lot_input.text().strip(),
         }
 
+class RemoveImplantDialog(QDialog):
+    def __init__(self, inventory, brand, type_, platform, width, length, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Remove Implants")
+        self.setModal(True)
+        self.setGeometry(300, 300, 700, 400)
+        
+        self.inventory = inventory
+        self.brand = brand
+        self.type_ = type_
+        self.platform = platform
+        self.width = width
+        self.length = length
+        
+        # Get all matching implants from inventory
+        self.matching_implants = [
+            implant for implant in inventory
+            if (implant["brand"] == brand and implant["type"] == type_ and
+                implant["platform"] == platform and implant["width"] == width and
+                implant["length"] == length)
+        ]
+        
+        layout = QVBoxLayout(self)
+        
+        # Title label
+        title_label = QLabel(f"Remove from {brand} - {type_} (Platform: {platform}, Size: {width}x{length})")
+        layout.addWidget(title_label)
+        
+        # Table to display implants
+        self.table = QTableWidget()
+        self.table.setColumnCount(5)
+        self.table.setHorizontalHeaderLabels(["REF", "LOT", "Expiry", "Qty in Stock", "Remove Qty"])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        
+        # Populate table with matching implants
+        for implant in self.matching_implants:
+            row = self.table.rowCount()
+            self.table.insertRow(row)
+            
+            self.table.setItem(row, 0, QTableWidgetItem(implant["ref"]))
+            self.table.setItem(row, 1, QTableWidgetItem(implant["lot"]))
+            self.table.setItem(row, 2, QTableWidgetItem(implant["expiry"]))
+            self.table.setItem(row, 3, QTableWidgetItem(str(implant["qty"])))
+            
+            # Add spinbox for remove quantity
+            spinbox = QSpinBox()
+            spinbox.setMinimum(0)
+            spinbox.setMaximum(implant["qty"])
+            spinbox.setValue(0)
+            self.table.setCellWidget(row, 4, spinbox)
+        
+        layout.addWidget(self.table)
+        
+        # OK and Cancel buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        button_box.accepted.connect(self.on_ok_clicked)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+    
+    def on_ok_clicked(self):
+        """Gather removal selections and show confirmation dialog"""
+        removals = []
+        
+        for row, implant in enumerate(self.matching_implants):
+            spinbox = self.table.cellWidget(row, 4)
+            remove_qty = spinbox.value()
+            
+            if remove_qty > 0:
+                removals.append({
+                    "ref": implant["ref"],
+                    "lot": implant["lot"],
+                    "expiry": implant["expiry"],
+                    "remove_qty": remove_qty,
+                    "inventory_index": self.inventory.index(implant)
+                })
+        
+        if not removals:
+            QMessageBox.information(self, "No Selection", "Please select at least one implant to remove.")
+            return
+        
+        # Show confirmation dialog
+        self.show_confirmation(removals)
+    
+    def show_confirmation(self, removals):
+        """Show confirmation dialog with removal details"""
+        confirmation_text = "You have selected the following implants to remove:\n\n"
+        
+        for removal in removals:
+            confirmation_text += (
+                f"REF: {removal['ref']}, LOT: {removal['lot']}, "
+                f"Expiry: {removal['expiry']}\n"
+                f"  Remove Qty: {removal['remove_qty']}\n\n"
+            )
+        
+        confirmation_text += "\nDo you want to proceed with the removal?"
+        
+        reply = QMessageBox.question(
+            self,
+            "Confirm Removal",
+            confirmation_text,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            self.removals = removals
+            self.accept()
+        # If No, stay in dialog
+    
+    def get_removals(self):
+        """Return list of removal operations"""
+        return getattr(self, 'removals', [])
+
 class ImplantInventory(QWidget):
     def __init__(self):
         super().__init__()
@@ -134,6 +247,9 @@ class ImplantInventory(QWidget):
 
         self.inventory = []
         self.load_data()
+        
+        # Store the currently selected row
+        self.selected_row = None
 
         layout = QVBoxLayout()
 
@@ -143,8 +259,12 @@ class ImplantInventory(QWidget):
         add_btn.clicked.connect(self.add_implant)
         save_btn = QPushButton("Save Inventory")
         save_btn.clicked.connect(self.save_data)
+        self.remove_btn = QPushButton("Remove Implant")
+        self.remove_btn.clicked.connect(self.remove_implant)
+        self.remove_btn.setEnabled(False)  # Disabled by default
         btn_layout.addWidget(add_btn)
         btn_layout.addWidget(save_btn)
+        btn_layout.addWidget(self.remove_btn)
         layout.addLayout(btn_layout)
 
         # Table
@@ -154,6 +274,7 @@ class ImplantInventory(QWidget):
             "Brand", "Type", "Platform", "Width", "Length", "Total Qty", "Most Recent Expiry", "Most Recent Expiry Qty", "Status"
         ])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.itemSelectionChanged.connect(self.on_table_selection_changed)
         layout.addWidget(self.table)
 
         self.setLayout(layout)
@@ -202,6 +323,55 @@ class ImplantInventory(QWidget):
             }
             self.inventory.append(implant)
             self.update_table()
+
+    def on_table_selection_changed(self):
+        """Enable/disable remove button based on table selection"""
+        selected_items = self.table.selectedItems()
+        if selected_items:
+            self.selected_row = selected_items[0].row()
+            self.remove_btn.setEnabled(True)
+        else:
+            self.selected_row = None
+            self.remove_btn.setEnabled(False)
+
+    def remove_implant(self):
+        """Open dialog to remove selected implant"""
+        if self.selected_row is None:
+            QMessageBox.warning(self, "Error", "Please select a row first.")
+            return
+        
+        # Get the condensed inventory to find the selected implant
+        condensed_inventory = self._get_condensed_inventory()
+        selected_implant = condensed_inventory[self.selected_row]
+        
+        # Open remove dialog
+        dialog = RemoveImplantDialog(
+            self.inventory,
+            selected_implant["brand"],
+            selected_implant["type"],
+            selected_implant["platform"],
+            selected_implant["width"],
+            selected_implant["length"],
+            self
+        )
+        
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            removals = dialog.get_removals()
+            
+            # Apply removals
+            for removal in removals:
+                inventory_index = removal["inventory_index"]
+                remove_qty = removal["remove_qty"]
+                
+                # Reduce quantity or remove entirely
+                if self.inventory[inventory_index]["qty"] > remove_qty:
+                    self.inventory[inventory_index]["qty"] -= remove_qty
+                else:
+                    # Remove the entire entry if quantity goes to 0 or below
+                    del self.inventory[inventory_index]
+            
+            self.update_table()
+            QMessageBox.information(self, "Success", "Implants removed successfully.")
 
     def _get_condensed_inventory(self):
         """
