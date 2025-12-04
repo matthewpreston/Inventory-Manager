@@ -1,132 +1,19 @@
 import sys
 import csv
-from datetime import datetime, timedelta
+from datetime import datetime
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QTableWidget, QTableWidgetItem,
     QMessageBox, QHeaderView, QDialog, QDialogButtonBox, QFormLayout, QComboBox, QInputDialog,
     QSpinBox, QTabWidget
 )
+from implants import AddImplantDialog
+from healingAbutments import AddHealingAbutmentDialog
+from boneGrafts import AddBoneGraftDialog
 
 IMPLANTS_FILE = "implants.csv"
 ABUTMENTS_FILE = "abutments.csv"
 BONE_GRAFTS_FILE = "bone_grafts.csv"
-
-# Dialog for implant input
-class AddImplantDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Add Implant")
-        self.setModal(True)
-        self.layout = QFormLayout(self)
-
-        self.brand_input = QComboBox()
-        self._brand_list = ["Nobel", "Straumann"]
-        self._refresh_brand_items()
-        self.brand_input.setCurrentText("Nobel")
-        self.brand_input.currentIndexChanged.connect(self._check_add_brand)
-
-        self.layout.addRow("Brand", self.brand_input)
-        self.type_label = QLabel("Type")
-        self.type_input = None
-        self.platform_label = QLabel("Platform")
-        self.platform_input = None
-        self.width_label = QLabel("Width")
-        self.width_input = None
-        self.length_label = QLabel("Length")
-        self.length_input = None
-        self._set_dynamic_widgets()
-        self.expiry_input = QLineEdit()
-        self.layout.addRow("Expiry (YYYY-MM-DD)", self.expiry_input)
-        self.qty_input = QLineEdit()
-        self.layout.addRow("Qty", self.qty_input)
-        self.ref_input = QLineEdit()
-        self.layout.addRow("REF", self.ref_input)
-        self.lot_input = QLineEdit()
-        self.layout.addRow("LOT", self.lot_input)
-
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-        self.layout.addWidget(self.button_box)
-
-    def _refresh_brand_items(self):
-        # Helper to refresh dropdown with brands + 'Add another brand...'
-        self.brand_input.clear()
-        brands_sorted = sorted(self._brand_list)
-        self.brand_input.addItems(brands_sorted + ["Add another brand..."])
-
-    def _set_dynamic_widgets(self):
-        # Remove existing widgets if present
-        for label, widget in [
-            (self.type_label, self.type_input),
-            (self.platform_label, self.platform_input),
-            (self.width_label, self.width_input),
-            (self.length_label, self.length_input)
-        ]:
-            if widget is not None:
-                self.layout.removeRow(label)
-        brand = self.brand_input.currentText()
-        # Type
-        if brand == "Nobel":
-            self.type_input = QComboBox()
-            self.type_input.addItems([
-                "NobelParallel TiUltra",
-                "NobelActive TiUltra"
-            ])
-            # Platform
-            self.platform_input = QComboBox()
-            self.platform_input.addItems(["3.0", "RP", "NP", "WP"])
-            # Width
-            self.width_input = QComboBox()
-            self.width_input.addItems(["3.0", "3.5", "3.75", "4.3", "5.0", "5.5"])
-            # Length
-            self.length_input = QComboBox()
-            self.length_input.addItems(["7.0", "8.5", "10.0", "11.5", "13", "15", "18"])
-        else:
-            self.type_input = QLineEdit()
-            self.platform_input = QLineEdit()
-            self.width_input = QLineEdit()
-            self.length_input = QLineEdit()
-        # Insert in order
-        self.layout.insertRow(1, self.type_label, self.type_input)
-        self.layout.insertRow(2, self.platform_label, self.platform_input)
-        self.layout.insertRow(3, self.width_label, self.width_input)
-        self.layout.insertRow(4, self.length_label, self.length_input)
-
-    def _check_add_brand(self, idx):
-        if self.brand_input.currentText() == "Add another brand...":
-            text, ok = QInputDialog.getText(self, "Add Brand", "Enter new brand name:")
-            if ok and text.strip():
-                new_brand = text.strip()
-                if new_brand not in self._brand_list:
-                    self._brand_list.append(new_brand)
-                    self._refresh_brand_items()
-                # Set current to new brand
-                brands_sorted = sorted(self._brand_list)
-                self.brand_input.setCurrentText(new_brand)
-            else:
-                # Revert to first brand if cancelled
-                brands_sorted = sorted(self._brand_list)
-                self.brand_input.setCurrentText(brands_sorted[0])
-
-    def get_data(self):
-        def get_val(widget):
-            if isinstance(widget, QComboBox):
-                return widget.currentText().strip()
-            else:
-                return widget.text().strip()
-        return {
-            "brand": self.brand_input.currentText().strip(),
-            "type": get_val(self.type_input),
-            "platform": get_val(self.platform_input),
-            "width": get_val(self.width_input),
-            "length": get_val(self.length_input),
-            "expiry": self.expiry_input.text().strip(),
-            "qty": self.qty_input.text().strip(),
-            "ref": self.ref_input.text().strip(),
-            "lot": self.lot_input.text().strip(),
-        }
 
 class RemoveImplantDialog(QDialog):
     def __init__(self, inventory, brand, type_, platform, width, length, parent=None):
@@ -234,145 +121,6 @@ class RemoveImplantDialog(QDialog):
     def get_removals(self):
         """Return list of removal operations"""
         return getattr(self, 'removals', [])
-
-class AddHealingAbutmentDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Add Healing Abutment")
-        self.setModal(True)
-        self.layout = QFormLayout(self)
-
-        self.brand_input = QComboBox()
-        self._brand_list = ["Nobel", "Straumann"]
-        self._refresh_brand_items()
-        self.brand_input.setCurrentText("Nobel")
-        self.brand_input.currentIndexChanged.connect(self._check_add_brand)
-
-        self.layout.addRow("Brand", self.brand_input)
-        self.type_input = QLineEdit()
-        self.layout.addRow("Type", self.type_input)
-        self.platform_input = QLineEdit()
-        self.layout.addRow("Platform", self.platform_input)
-        self.width_input = QLineEdit()
-        self.layout.addRow("Width", self.width_input)
-        self.height_input = QLineEdit()
-        self.layout.addRow("Height", self.height_input)
-        self.expiry_input = QLineEdit()
-        self.layout.addRow("Expiry (YYYY-MM-DD)", self.expiry_input)
-        self.qty_input = QLineEdit()
-        self.layout.addRow("Qty", self.qty_input)
-        self.ref_input = QLineEdit()
-        self.layout.addRow("REF", self.ref_input)
-        self.lot_input = QLineEdit()
-        self.layout.addRow("LOT", self.lot_input)
-
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-        self.layout.addWidget(self.button_box)
-
-    def _refresh_brand_items(self):
-        self.brand_input.clear()
-        brands_sorted = sorted(self._brand_list)
-        self.brand_input.addItems(brands_sorted + ["Add another brand..."])
-
-    def _check_add_brand(self, idx):
-        if self.brand_input.currentText() == "Add another brand...":
-            text, ok = QInputDialog.getText(self, "Add Brand", "Enter new brand name:")
-            if ok and text.strip():
-                new_brand = text.strip()
-                if new_brand not in self._brand_list:
-                    self._brand_list.append(new_brand)
-                    self._refresh_brand_items()
-                brands_sorted = sorted(self._brand_list)
-                self.brand_input.setCurrentText(new_brand)
-            else:
-                brands_sorted = sorted(self._brand_list)
-                self.brand_input.setCurrentText(brands_sorted[0])
-
-    def get_data(self):
-        return {
-            "brand": self.brand_input.currentText().strip(),
-            "type": self.type_input.text().strip(),
-            "platform": self.platform_input.text().strip(),
-            "width": self.width_input.text().strip(),
-            "height": self.height_input.text().strip(),
-            "expiry": self.expiry_input.text().strip(),
-            "qty": self.qty_input.text().strip(),
-            "ref": self.ref_input.text().strip(),
-            "lot": self.lot_input.text().strip(),
-        }
-
-class AddBoneGraftDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Add Bone Graft")
-        self.setModal(True)
-        self.layout = QFormLayout(self)
-
-        self.brand_input = QComboBox()
-        self._brand_list = ["Nobel", "Straumann"]
-        self._refresh_brand_items()
-        self.brand_input.setCurrentText("Nobel")
-        self.brand_input.currentIndexChanged.connect(self._check_add_brand)
-
-        self.layout.addRow("Brand", self.brand_input)
-        self.type_input = QLineEdit()
-        self.layout.addRow("Type", self.type_input)
-        self.particulate_input = QLineEdit()
-        self.layout.addRow("Particulate", self.particulate_input)
-        self.granule_size_input = QLineEdit()
-        self.layout.addRow("Granule Size", self.granule_size_input)
-        self.amount_input = QLineEdit()
-        self.layout.addRow("Amount", self.amount_input)
-        self.expiry_input = QLineEdit()
-        self.layout.addRow("Expiry (YYYY-MM-DD)", self.expiry_input)
-        self.qty_input = QLineEdit()
-        self.layout.addRow("Qty", self.qty_input)
-        self.ref_input = QLineEdit()
-        self.layout.addRow("REF", self.ref_input)
-        self.lot_input = QLineEdit()
-        self.layout.addRow("LOT", self.lot_input)
-        self.sn_input = QLineEdit()
-        self.layout.addRow("SN", self.sn_input)
-
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-        self.layout.addWidget(self.button_box)
-
-    def _refresh_brand_items(self):
-        self.brand_input.clear()
-        brands_sorted = sorted(self._brand_list)
-        self.brand_input.addItems(brands_sorted + ["Add another brand..."])
-
-    def _check_add_brand(self, idx):
-        if self.brand_input.currentText() == "Add another brand...":
-            text, ok = QInputDialog.getText(self, "Add Brand", "Enter new brand name:")
-            if ok and text.strip():
-                new_brand = text.strip()
-                if new_brand not in self._brand_list:
-                    self._brand_list.append(new_brand)
-                    self._refresh_brand_items()
-                brands_sorted = sorted(self._brand_list)
-                self.brand_input.setCurrentText(new_brand)
-            else:
-                brands_sorted = sorted(self._brand_list)
-                self.brand_input.setCurrentText(brands_sorted[0])
-
-    def get_data(self):
-        return {
-            "brand": self.brand_input.currentText().strip(),
-            "type": self.type_input.text().strip(),
-            "particulate": self.particulate_input.text().strip(),
-            "granule_size": self.granule_size_input.text().strip(),
-            "amount": self.amount_input.text().strip(),
-            "expiry": self.expiry_input.text().strip(),
-            "qty": self.qty_input.text().strip(),
-            "ref": self.ref_input.text().strip(),
-            "lot": self.lot_input.text().strip(),
-            "sn": self.sn_input.text().strip(),
-        }
 
 class RemoveHealingAbutmentDialog(QDialog):
     def __init__(self, inventory, brand, type_, platform, width, height, parent=None):
@@ -766,8 +514,19 @@ class ImplantInventory(QWidget):
             return
         
         condensed_inventory = self._get_condensed_implants_inventory()
-        selected_implant = condensed_inventory[self.implants_selected_row]
-        
+        sorted_condensed_inventory = sorted(
+            condensed_inventory,
+            key=lambda x: (
+                x["brand"],
+                x["type"], 
+                x["platform"], 
+                x["width"], 
+                x["length"], 
+                x["most_recent_expiry"]
+            )
+        )
+        selected_implant = sorted_condensed_inventory[self.implants_selected_row]
+
         dialog = RemoveImplantDialog(
             self.implants_inventory,
             selected_implant["brand"],
@@ -838,8 +597,19 @@ class ImplantInventory(QWidget):
         self.implants_table.setRowCount(0)
         now = datetime.now()
         condensed_inventory = self._get_condensed_implants_inventory()
+        sorted_condensed_inventory = sorted(
+            condensed_inventory,
+            key=lambda x: (
+                x["brand"],
+                x["type"], 
+                x["platform"], 
+                x["width"], 
+                x["length"], 
+                x["most_recent_expiry"]
+            )
+        )
 
-        for implant in sorted(condensed_inventory, key=lambda x: (x["brand"], x["type"], x["platform"], x["width"], x["length"], x["most_recent_expiry"])):
+        for implant in sorted_condensed_inventory:
             row = self.implants_table.rowCount()
             self.implants_table.insertRow(row)
             self.implants_table.setItem(row, 0, QTableWidgetItem(implant["brand"]))
@@ -928,7 +698,18 @@ class ImplantInventory(QWidget):
             return
         
         condensed_inventory = self._get_condensed_abutments_inventory()
-        selected_abutment = condensed_inventory[self.abutments_selected_row]
+        sorted_condensed_inventory = sorted(
+            condensed_inventory,
+            key=lambda x: (
+                x["brand"],
+                x["type"], 
+                x["platform"], 
+                x["width"], 
+                x["length"], 
+                x["most_recent_expiry"]
+            )
+        )
+        selected_abutment = sorted_condensed_inventory[self.abutments_selected_row]
         
         dialog = RemoveHealingAbutmentDialog(
             self.abutments_inventory,
@@ -1000,8 +781,19 @@ class ImplantInventory(QWidget):
         self.abutments_table.setRowCount(0)
         now = datetime.now()
         condensed_inventory = self._get_condensed_abutments_inventory()
+        sorted_condensed_inventory = sorted(
+            condensed_inventory,
+            key=lambda x: (
+                x["brand"],
+                x["type"], 
+                x["platform"], 
+                x["width"], 
+                x["length"], 
+                x["most_recent_expiry"]
+            )
+        )
 
-        for abutment in sorted(condensed_inventory, key=lambda x: (x["brand"], x["type"], x["platform"], x["width"], x["height"], x["most_recent_expiry"])):
+        for abutment in sorted_condensed_inventory:
             row = self.abutments_table.rowCount()
             self.abutments_table.insertRow(row)
             self.abutments_table.setItem(row, 0, QTableWidgetItem(abutment["brand"]))
@@ -1092,7 +884,18 @@ class ImplantInventory(QWidget):
             return
         
         condensed_inventory = self._get_condensed_bone_grafts_inventory()
-        selected_bone_graft = condensed_inventory[self.bone_grafts_selected_row]
+        sorted_condensed_inventory = sorted(
+            condensed_inventory,
+            key=lambda x: (
+                x["brand"],
+                x["type"], 
+                x["particulate"], 
+                x["granule_size"], 
+                x["amount"], 
+                x["most_recent_expiry"]
+            )
+        )
+        selected_bone_graft = sorted_condensed_inventory[self.bone_grafts_selected_row]
         
         dialog = RemoveBoneGraftDialog(
             self.bone_grafts_inventory,
@@ -1164,8 +967,19 @@ class ImplantInventory(QWidget):
         self.bone_grafts_table.setRowCount(0)
         now = datetime.now()
         condensed_inventory = self._get_condensed_bone_grafts_inventory()
+        sorted_condensed_inventory = sorted(
+            condensed_inventory,
+            key=lambda x: (
+                x["brand"],
+                x["type"], 
+                x["particulate"], 
+                x["granule_size"], 
+                x["amount"], 
+                x["most_recent_expiry"]
+            )
+        )
 
-        for bone_graft in sorted(condensed_inventory, key=lambda x: (x["brand"], x["type"], x["particulate"], x["granule_size"], x["amount"], x["most_recent_expiry"])):
+        for bone_graft in sorted_condensed_inventory:
             row = self.bone_grafts_table.rowCount()
             self.bone_grafts_table.insertRow(row)
             self.bone_grafts_table.setItem(row, 0, QTableWidgetItem(bone_graft["brand"]))
