@@ -7,120 +7,14 @@ from PyQt6.QtWidgets import (
     QMessageBox, QHeaderView, QDialog, QDialogButtonBox, QFormLayout, QComboBox, QInputDialog,
     QSpinBox, QTabWidget
 )
-from implants import AddImplantDialog
+from exceptions import *
+from implants import Implant, AddImplantDialog, RemoveImplantDialog
 from healingAbutments import AddHealingAbutmentDialog
 from boneGrafts import AddBoneGraftDialog
 
 IMPLANTS_FILE = "implants.csv"
-ABUTMENTS_FILE = "abutments.csv"
+HEALING_ABUTMENTS_FILE = "healing_abutments.csv"
 BONE_GRAFTS_FILE = "bone_grafts.csv"
-
-class RemoveImplantDialog(QDialog):
-    def __init__(self, inventory, brand, type_, platform, width, length, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Remove Implants")
-        self.setModal(True)
-        self.setGeometry(300, 300, 700, 400)
-        
-        self.inventory = inventory
-
-        # Get all matching implants from inventory
-        self.matching_implants = [
-            implant for implant in inventory
-            if (implant["brand"] == brand and implant["type"] == type_ and
-                implant["platform"] == platform and implant["width"] == width and
-                implant["length"] == length)
-        ]
-        
-        layout = QVBoxLayout(self)
-        
-        # Title label
-        title_label = QLabel(f"Remove from {brand} - {type_} (Platform: {platform}, Size: {width}x{length})")
-        layout.addWidget(title_label)
-        
-        # Table to display implants
-        self.table = QTableWidget()
-        self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["REF", "LOT", "Expiry", "Qty in Stock", "Remove Qty"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        
-        # Populate table with matching implants
-        for implant in self.matching_implants:
-            row = self.table.rowCount()
-            self.table.insertRow(row)
-            
-            self.table.setItem(row, 0, QTableWidgetItem(implant["ref"]))
-            self.table.setItem(row, 1, QTableWidgetItem(implant["lot"]))
-            self.table.setItem(row, 2, QTableWidgetItem(implant["expiry"]))
-            self.table.setItem(row, 3, QTableWidgetItem(str(implant["qty"])))
-            
-            # Add spinbox for remove quantity
-            spinbox = QSpinBox()
-            spinbox.setMinimum(0)
-            spinbox.setMaximum(implant["qty"])
-            spinbox.setValue(0)
-            self.table.setCellWidget(row, 4, spinbox)
-        
-        layout.addWidget(self.table)
-        
-        # OK and Cancel buttons
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        button_box.accepted.connect(self.on_ok_clicked)
-        button_box.rejected.connect(self.reject)
-        layout.addWidget(button_box)
-    
-    def on_ok_clicked(self):
-        """Gather removal selections and show confirmation dialog"""
-        removals = []
-        
-        for row, implant in enumerate(self.matching_implants):
-            spinbox = self.table.cellWidget(row, 4)
-            remove_qty = spinbox.value()
-            
-            if remove_qty > 0:
-                removals.append({
-                    "ref": implant["ref"],
-                    "lot": implant["lot"],
-                    "expiry": implant["expiry"],
-                    "remove_qty": remove_qty,
-                    "inventory_index": self.inventory.index(implant)
-                })
-        
-        if not removals:
-            QMessageBox.information(self, "No Selection", "Please select at least one implant to remove.")
-            return
-        
-        # Show confirmation dialog
-        self.show_confirmation(removals)
-    
-    def show_confirmation(self, removals):
-        """Show confirmation dialog with removal details"""
-        confirmation_text = "You have selected the following implants to remove:\n\n"
-        
-        for removal in removals:
-            confirmation_text += (
-                f"REF: {removal['ref']}, LOT: {removal['lot']}, "
-                f"Expiry: {removal['expiry']}\n"
-                f"  Remove Qty: {removal['remove_qty']}\n\n"
-            )
-        
-        confirmation_text += "\nDo you want to proceed with the removal?"
-        
-        reply = QMessageBox.question(
-            self,
-            "Confirm Removal",
-            confirmation_text,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        
-        if reply == QMessageBox.StandardButton.Yes:
-            self.removals = removals
-            self.accept()
-        # If No, stay in dialog
-    
-    def get_removals(self):
-        """Return list of removal operations"""
-        return getattr(self, 'removals', [])
 
 class RemoveHealingAbutmentDialog(QDialog):
     def __init__(self, inventory, brand, type_, platform, width, height, parent=None):
@@ -343,7 +237,7 @@ class ImplantInventory(QWidget):
         self.setGeometry(200, 200, 1200, 600)
 
         # Separate inventories for each product type
-        self.implants_inventory = []
+        self.implants_inventory: list[Implant] = []
         self.abutments_inventory = []
         self.bone_grafts_inventory = []
         
@@ -455,45 +349,11 @@ class ImplantInventory(QWidget):
     def add_implant(self):
         dialog = AddImplantDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            data = dialog.get_data()
-            brand = data["brand"]
-            type_ = data["type"]
-            platform = data["platform"]
-            width = data["width"]
-            length = data["length"]
-            expiry = data["expiry"]
-            qty_text = data["qty"]
-            ref = data["ref"]
-            lot = data["lot"]
-
-            if not (brand and type_ and platform and width and length and expiry and qty_text and ref and lot):
-                QMessageBox.warning(self, "Error", "All fields are required.")
-                return
-
             try:
-                expiry_date = datetime.strptime(expiry, "%Y-%m-%d")
-            except ValueError:
-                QMessageBox.warning(self, "Error", "Expiry must be YYYY-MM-DD")
+                implant = dialog.get_data()
+            except (AllFieldsRequiredError, InvalidDateError, InvalidQuantityError) as e:
+                QMessageBox.warning(self, "Error", str(e))
                 return
-
-            try:
-                qty = int(qty_text)
-            except ValueError:
-                QMessageBox.warning(self, "Error", "Quantity must be a number")
-                return
-
-            implant = {
-                "brand": brand,
-                "type": type_,
-                "platform": platform,
-                "width": width,
-                "length": length,
-                "expiry": expiry_date.strftime("%Y-%m-%d"),
-                "qty": qty,
-                "ref": ref,
-                "lot": lot,
-                "product_type": "implant"
-            }
             self.implants_inventory.append(implant)
             self.update_implants_table()
 
@@ -512,67 +372,87 @@ class ImplantInventory(QWidget):
         if self.implants_selected_row is None:
             QMessageBox.warning(self, "Error", "Please select a row first.")
             return
-        
-        condensed_inventory = self._get_condensed_implants_inventory()
-        sorted_condensed_inventory = sorted(
-            condensed_inventory,
-            key=lambda x: (
-                x["brand"],
-                x["type"], 
-                x["platform"], 
-                x["width"], 
-                x["length"], 
-                x["most_recent_expiry"]
-            )
-        )
+
+        # Get stats for selected implant
+        sorted_condensed_inventory = self._get_sorted_condensed_implants_inventory()
         selected_implant = sorted_condensed_inventory[self.implants_selected_row]
 
+        # Get all matching implants from inventory
+        matching_implants = [
+            implant for implant in self.implants_inventory
+            if (
+                implant.brand == selected_implant["brand"] and 
+                implant.type_ == selected_implant["type"] and
+                implant.platform == selected_implant["platform"] and 
+                implant.width == selected_implant["width"] and
+                implant.length == selected_implant["length"]
+            )
+        ]
+
         dialog = RemoveImplantDialog(
-            self.implants_inventory,
-            selected_implant["brand"],
-            selected_implant["type"],
-            selected_implant["platform"],
-            selected_implant["width"],
-            selected_implant["length"],
-            self
+            matching_implants,
+            brand=selected_implant["brand"],
+            type_=selected_implant["type"],
+            platform=selected_implant["platform"],
+            width=selected_implant["width"],
+            length=selected_implant["length"],
+            parent=self
         )
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
             removals = dialog.get_removals()
             
             for removal in removals:
-                inventory_index = removal["inventory_index"]
-                remove_qty = removal["remove_qty"]
-                
-                if self.implants_inventory[inventory_index]["qty"] > remove_qty:
-                    self.implants_inventory[inventory_index]["qty"] -= remove_qty
+                remove_qty = removal.remove_qty
+
+                implant_to_remove = matching_implants[removal.inventory_index]
+                # Find the index in the main inventory
+                inventory_index = -1
+                for implant in self.implants_inventory:
+                    if (
+                            implant.brand == implant_to_remove.brand and
+                            implant.type_ == implant_to_remove.type_ and
+                            implant.platform == implant_to_remove.platform and
+                            implant.width == implant_to_remove.width and
+                            implant.length == implant_to_remove.length and
+                            implant.ref == implant_to_remove.ref and
+                            implant.lot == implant_to_remove.lot and
+                            implant.expiry == implant_to_remove.expiry
+                        ):
+                        inventory_index = self.implants_inventory.index(implant)
+                        break
+
+                if inventory_index == -1:
+                    continue  # Should not happen
+                if self.implants_inventory[inventory_index].qty > remove_qty:
+                    self.implants_inventory[inventory_index].qty -= remove_qty
                 else:
                     del self.implants_inventory[inventory_index]
             
             self.update_implants_table()
             QMessageBox.information(self, "Success", "Implants removed successfully.")
 
-    def _get_condensed_implants_inventory(self):
+    def _get_sorted_condensed_implants_inventory(self):
         """Groups implants by brand, type, platform, width, and length."""
         grouped = {}
         
         for implant in self.implants_inventory:
-            key = (implant["brand"], implant["type"], implant["platform"], implant["width"], implant["length"])
+            key = (implant.brand, implant.type_, implant.platform, implant.width, implant.length)
             
             if key not in grouped:
                 grouped[key] = {
-                    "brand": implant["brand"],
-                    "type": implant["type"],
-                    "platform": implant["platform"],
-                    "width": implant["width"],
-                    "length": implant["length"],
+                    "brand": implant.brand,
+                    "type": implant.type_,
+                    "platform": implant.platform,
+                    "width": implant.width,
+                    "length": implant.length,
                     "total_qty": 0,
                     "expiries": []
                 }
-            
-            grouped[key]["total_qty"] += implant["qty"]
-            grouped[key]["expiries"].append({"date": implant["expiry"], "qty": implant["qty"]})
-        
+
+            grouped[key]["total_qty"] += implant.qty
+            grouped[key]["expiries"].append({"date": implant.expiry, "qty": implant.qty})
+
         condensed = []
         for implant_group in grouped.values():
             expiries_sorted = sorted(implant_group["expiries"], key=lambda x: datetime.strptime(x["date"], "%Y-%m-%d"), reverse=True)
@@ -591,14 +471,8 @@ class ImplantInventory(QWidget):
             }
             condensed.append(condensed_item)
         
-        return condensed
-
-    def update_implants_table(self):
-        self.implants_table.setRowCount(0)
-        now = datetime.now()
-        condensed_inventory = self._get_condensed_implants_inventory()
-        sorted_condensed_inventory = sorted(
-            condensed_inventory,
+        sorted_condensed = sorted(
+            condensed,
             key=lambda x: (
                 x["brand"],
                 x["type"], 
@@ -608,6 +482,13 @@ class ImplantInventory(QWidget):
                 x["most_recent_expiry"]
             )
         )
+
+        return sorted_condensed
+
+    def update_implants_table(self):
+        self.implants_table.setRowCount(0)
+        now = datetime.now()
+        sorted_condensed_inventory = self._get_sorted_condensed_implants_inventory()
 
         for implant in sorted_condensed_inventory:
             row = self.implants_table.rowCount()
@@ -676,7 +557,6 @@ class ImplantInventory(QWidget):
                 "qty": qty,
                 "ref": ref,
                 "lot": lot,
-                "product_type": "abutment"
             }
             self.abutments_inventory.append(abutment)
             self.update_abutments_table()
@@ -862,7 +742,6 @@ class ImplantInventory(QWidget):
                 "ref": ref,
                 "lot": lot,
                 "sn": sn,
-                "product_type": "bone_graft"
             }
             self.bone_grafts_inventory.append(bone_graft)
             self.update_bone_grafts_table()
@@ -1032,15 +911,15 @@ class ImplantInventory(QWidget):
                 writer.writerow(["Brand", "Type", "Platform", "Width", "Length", "Expiry", "Qty", "REF", "LOT"])
                 for implant in self.implants_inventory:
                     writer.writerow([
-                        implant["brand"],
-                        implant["type"],
-                        implant["platform"],
-                        implant["width"],
-                        implant["length"],
-                        implant["expiry"],
-                        implant["qty"],
-                        implant["ref"],
-                        implant["lot"]
+                        implant.brand,
+                        implant.type_,
+                        implant.platform,
+                        implant.width,
+                        implant.length,
+                        implant.expiry,
+                        implant.qty,
+                        implant.ref,
+                        implant.lot
                     ])
             QMessageBox.information(self, "Saved", f"Implants saved to {IMPLANTS_FILE}.")
         except Exception as e:
@@ -1048,7 +927,7 @@ class ImplantInventory(QWidget):
 
     def save_abutments_data(self):
         try:
-            with open(ABUTMENTS_FILE, "w", newline="") as f:
+            with open(HEALING_ABUTMENTS_FILE, "w", newline="") as f:
                 writer = csv.writer(f)
                 # Write header
                 writer.writerow(["Brand", "Type", "Platform", "Width", "Height", "Expiry", "Qty", "REF", "LOT"])
@@ -1064,7 +943,7 @@ class ImplantInventory(QWidget):
                         abutment["ref"],
                         abutment["lot"]
                     ])
-            QMessageBox.information(self, "Saved", f"Healing abutments saved to {ABUTMENTS_FILE}.")
+            QMessageBox.information(self, "Saved", f"Healing abutments saved to {HEALING_ABUTMENTS_FILE}.")
         except Exception as e:
             QMessageBox.warning(self, "Save Error", f"Failed to save abutments: {e}")
 
@@ -1111,23 +990,23 @@ class ImplantInventory(QWidget):
                         continue
                     if len(row) != 9:
                         continue
-                    self.implants_inventory.append({
-                        "brand": row[0],
-                        "type": row[1],
-                        "platform": row[2],
-                        "width": row[3],
-                        "length": row[4],
-                        "expiry": row[5],
-                        "qty": int(row[6]),
-                        "ref": row[7],
-                        "lot": row[8]
-                    })
+                    self.implants_inventory.append(Implant(
+                        brand=row[0],
+                        type_=row[1],
+                        platform=row[2],
+                        width=row[3],
+                        length=row[4],
+                        expiry=row[5],
+                        qty=int(row[6]),
+                        ref=row[7],
+                        lot=row[8]
+                    ))
         except FileNotFoundError:
             pass
 
         # Load abutments
         try:
-            with open(ABUTMENTS_FILE, "r") as f:
+            with open(HEALING_ABUTMENTS_FILE, "r") as f:
                 reader = csv.reader(f)
                 for row in reader:
                     # Skip header row if present
