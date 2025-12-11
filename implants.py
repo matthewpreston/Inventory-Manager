@@ -1,15 +1,13 @@
-from datetime import datetime
 from PyQt6.QtWidgets import (
     QComboBox, QLabel, QLineEdit
 )
 from baseDialog import AddDialog, RemoveDialog
+from baseInventory import Inventory
 from baseItem import Item
-from exceptions import AllFieldsRequiredError, InvalidDateError, InvalidQuantityError
 
 class Implant(Item):
     def __init__(self, brand, type_, platform, width, length, ref, lot, expiry, qty):
-        super().__init__(ref, lot, expiry, qty)
-        self.brand = brand
+        super().__init__(brand, ref, lot, expiry, qty)
         self.type_ = type_
         self.platform = platform
         self.width = width
@@ -19,10 +17,11 @@ class AddImplantDialog(AddDialog):
     def __init__(self, parent=None, title="Add Implant"):
         super().__init__(parent, title)
 
+    def _add_dialog_body_widgets(self):
+        # Initialize dialog
         self._brand_list = ["Nobel", "Straumann"]
         self._refresh_brand_items()
         self.brand_input.setCurrentText("Nobel")
-
         self.layout_.addRow("Brand", self.brand_input)
         self.type_label = QLabel("Type")
         self.type_input = None
@@ -32,17 +31,11 @@ class AddImplantDialog(AddDialog):
         self.width_input = None
         self.length_label = QLabel("Length")
         self.length_input = None
-        self._set_dynamic_widgets()
-        self.expiry_input = QLineEdit()
-        self.layout_.addRow("Expiry (YYYY-MM-DD)", self.expiry_input)
-        self.qty_input = QLineEdit()
-        self.layout_.addRow("Qty", self.qty_input)
-        self.ref_input = QLineEdit()
+        self._set_dynamic_widgets() # Also adds to layout
         self.layout_.addRow("REF", self.ref_input)
-        self.lot_input = QLineEdit()
         self.layout_.addRow("LOT", self.lot_input)
-
-        self._add_button_box()
+        self.layout_.addRow("Expiry (YYYY-MM-DD)", self.expiry_input)
+        self.layout_.addRow("Qty", self.qty_input)
 
     def _set_dynamic_widgets(self):
         # Remove existing widgets if present
@@ -55,8 +48,8 @@ class AddImplantDialog(AddDialog):
             if widget is not None:
                 self.layout_.removeRow(label)
         brand = self.brand_input.currentText()
-        # Type
         if brand == "Nobel":
+            # Type
             self.type_input = QComboBox()
             self.type_input.addItems([
                 "NobelParallel TiUltra",
@@ -94,23 +87,25 @@ class AddImplantDialog(AddDialog):
         platform=get_val(self.platform_input)
         width=get_val(self.width_input)
         length=get_val(self.length_input)
-        expiry=self.expiry_input.text().strip()
-        qty=self.qty_input.text().strip()
         ref=self.ref_input.text().strip()
         lot=self.lot_input.text().strip()
+        expiry=self.expiry_input.text().strip()
+        qty=self.qty_input.text().strip()
 
-        if not (brand and type_ and platform and width and length and expiry and qty and ref and lot):
-            raise AllFieldsRequiredError("All fields are required.")
-
-        try:
-            expiry_date = datetime.strptime(expiry, "%Y-%m-%d")
-        except ValueError:
-            raise InvalidDateError("Expiry must be YYYY-MM-DD")
-
-        try:
-            qty = int(qty)
-        except ValueError:
-            raise InvalidQuantityError("Quantity must be a number")
+        # Validate inputs, raising exceptions as needed
+        self._check_all_fields_filled({
+            "brand": brand,
+            "type_": type_,
+            "platform": platform,
+            "width": width,
+            "length": length,
+            "ref": ref,
+            "lot": lot,
+            "expiry": expiry,
+            "qty": qty
+        })
+        expiry_date = self._check_expiry_date(expiry)
+        qty = self._check_quantity(qty)
 
         return Implant(
             brand=brand,
@@ -118,10 +113,10 @@ class AddImplantDialog(AddDialog):
             platform=platform,
             width=width,
             length=length,
-            expiry=expiry_date.strftime("%Y-%m-%d"),
-            qty=qty,
             ref=ref,
-            lot=lot
+            lot=lot,
+            expiry=expiry_date.strftime("%Y-%m-%d"),
+            qty=qty
         )
     
 class RemoveImplantDialog(RemoveDialog):
@@ -144,3 +139,19 @@ class RemoveImplantDialog(RemoveDialog):
             title_label=f"Remove from {brand} - {type_} (Platform: {platform}, Size: {width}x{length})",
             item_name="implant"
         )
+
+class ImplantInventory(Inventory):
+    def __init__(
+            self,
+            inventory_file: str,
+            ItemClass=Implant,
+            AddDialogClass=AddImplantDialog,
+            RemoveDialogClass=RemoveImplantDialog,
+            header_labels=[
+                "Brand", "Type", "Platform", "Width", "Length"
+            ],
+            attribute_labels=[
+                "brand", "type_", "platform", "width", "length"
+            ],
+            item_name="implant"):
+        super().__init__(inventory_file, ItemClass, AddDialogClass, RemoveDialogClass, header_labels, attribute_labels, item_name)

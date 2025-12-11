@@ -10,5 +10,5 @@ class InvalidQuantityError(Exception):
 class ItemNotFoundError(Exception):
     pass
 
-class DuplicateItemError(Exception):
+class FileReadError(Exception):
     pass

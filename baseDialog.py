@@ -1,9 +1,9 @@
-from email import header
+from datetime import datetime
 from PyQt6.QtWidgets import (
-    QDialog, QDialogButtonBox, QComboBox, QFormLayout, QInputDialog, QVBoxLayout, QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QSpinBox, QMessageBox
+    QDialog, QDialogButtonBox, QComboBox, QFormLayout, QInputDialog, QVBoxLayout, QLabel, QLineEdit, QTableWidget, QTableWidgetItem, QHeaderView, QSpinBox, QMessageBox
 )
-
 from baseItem import Item, RemovalItem
+from exceptions import AllFieldsRequiredError, InvalidDateError, InvalidQuantityError
 
 class AddDialog(QDialog):
     def __init__(self, parent=None, title="Add Item"):
@@ -15,6 +15,23 @@ class AddDialog(QDialog):
         self.brand_input = QComboBox()
         self._brand_list = []
         self.brand_input.currentIndexChanged.connect(self._check_add_brand)
+        self.expiry_input = QLineEdit()
+        self.qty_input = QLineEdit()
+        self.ref_input = QLineEdit()
+        self.lot_input = QLineEdit()
+        self._add_dialog_body_widgets()
+        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        self.layout_.addWidget(self.button_box)
+
+    def _add_dialog_body_widgets(self):
+        # Initialize dialog, to be overridden by subclasses
+        self.layout_.addRow("Brand", self.brand_input)
+        self.layout_.addRow("REF", self.ref_input)
+        self.layout_.addRow("LOT", self.lot_input)
+        self.layout_.addRow("Expiry (YYYY-MM-DD)", self.expiry_input)
+        self.layout_.addRow("Qty", self.qty_input)
 
     def _refresh_brand_items(self):
         # Helper to refresh dropdown with brands + 'Add another brand...'
@@ -23,6 +40,7 @@ class AddDialog(QDialog):
         self.brand_input.addItems(brands_sorted + ["Add another brand..."])
 
     def _check_add_brand(self):
+        # Check if 'Add another brand...' selected
         if self.brand_input.currentText() == "Add another brand...":
             text, ok = QInputDialog.getText(self, "Add Brand", "Enter new brand name:")
             if ok and text.strip():
@@ -37,15 +55,52 @@ class AddDialog(QDialog):
                 # Revert to first brand if cancelled
                 brands_sorted = sorted(self._brand_list)
                 self.brand_input.setCurrentText(brands_sorted[0])
-    
-    def _add_button_box(self):
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-        self.layout_.addWidget(self.button_box)
 
-    def get_data(self):
-        pass
+    def _check_all_fields_filled(self, fields: dict) -> None:
+        # Helper to check all fields are filled
+        if not all(value.strip() for value in fields.values()):
+            raise AllFieldsRequiredError("All fields are required.")
+        
+    def _check_expiry_date(self, expiry: str) -> datetime:
+        # Helper to validate expiry date format
+        try:
+            return datetime.strptime(expiry, "%Y-%m-%d")
+        except ValueError:
+            raise InvalidDateError("Expiry must be YYYY-MM-DD")
+        
+    def _check_quantity(self, qty: str) -> int:
+        # Helper to validate quantity is an integer
+        try:
+            return int(qty)
+        except ValueError:
+            raise InvalidQuantityError("Quantity must be a number")
+
+    def get_data(self) -> Item:
+        """Gather data from inputs and return Item instance"""            
+        brand=self.brand_input.currentText().strip()
+        expiry=self.expiry_input.text().strip()
+        qty=self.qty_input.text().strip()
+        ref=self.ref_input.text().strip()
+        lot=self.lot_input.text().strip()
+
+        # Validate inputs, raising exceptions as needed
+        self._check_all_fields_filled({
+            "brand": brand,
+            "expiry": expiry,
+            "qty": qty,
+            "ref": ref,
+            "lot": lot
+        })
+        expiry_date = self._check_expiry_date(expiry)
+        qty = self._check_quantity(qty)
+
+        return Item(
+            brand=brand,
+            expiry=expiry_date.strftime("%Y-%m-%d"),
+            qty=qty,
+            ref=ref,
+            lot=lot
+        )
 
 class RemoveDialog(QDialog):
     def __init__(

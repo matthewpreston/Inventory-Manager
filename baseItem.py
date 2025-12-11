@@ -1,5 +1,6 @@
 class Item:
-    def __init__(self, ref, lot, expiry, qty: int):
+    def __init__(self, brand, ref, lot, expiry, qty: int):
+        self.brand = brand
         self.ref = ref
         self.lot = lot
         self.expiry = expiry
