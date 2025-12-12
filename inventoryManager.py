@@ -6,9 +6,9 @@ from implants import ImplantInventory
 from healingAbutments import HealingAbutmentInventory
 from boneGrafts import BoneGraftInventory
 
-IMPLANTS_FILE = "implants.csv"
-HEALING_ABUTMENTS_FILE = "healing_abutments.csv"
-BONE_GRAFTS_FILE = "bone_grafts.csv"
+IMPLANTS_FILE = "Inventory/implants.csv"
+HEALING_ABUTMENTS_FILE = "Inventory/healing_abutments.csv"
+BONE_GRAFTS_FILE = "Inventory/bone_grafts.csv"
 
 class InventoryManager(QWidget):
     def __init__(self):

@@ -21,7 +21,10 @@ class AddHealingAbutmentDialog(AddDialog):
         # Initialize dialog
         self._brand_list = ["Nobel", "Straumann"]
         self._refresh_brand_items()
+        # Set default and connect change handler so dependent widgets update when brand changes
         self.brand_input.setCurrentText("Nobel")
+        # Update dynamic widgets whenever the brand selection changes
+        self.brand_input.currentTextChanged.connect(self._on_brand_changed)
         self.layout_.addRow("Brand", self.brand_input)
         self.type_label = QLabel("Type")
         self.type_input = None
@@ -39,14 +42,11 @@ class AddHealingAbutmentDialog(AddDialog):
 
     def _set_dynamic_widgets(self):
         # Remove existing widgets if present
-        for label, widget in [
-            (self.type_label, self.type_input),
-            (self.platform_label, self.platform_input),
-            (self.width_label, self.width_input),
-            (self.height_label, self.height_input)
-        ]:
-            if widget is not None:
-                self.layout_.removeRow(label)
+        self.type_input.deleteLater() if self.type_input else None
+        self.platform_input.deleteLater() if self.platform_input else None
+        self.width_input.deleteLater() if self.width_input else None
+        self.height_input.deleteLater() if self.height_input else None
+        # Add new widgets based on selected brand
         brand = self.brand_input.currentText()
         if brand == "Nobel":
             # Type
@@ -74,6 +74,15 @@ class AddHealingAbutmentDialog(AddDialog):
         self.layout_.insertRow(2, self.platform_label, self.platform_input)
         self.layout_.insertRow(3, self.width_label, self.width_input)
         self.layout_.insertRow(4, self.height_label, self.height_input)
+
+    def _on_brand_changed(self, new_brand: str):
+        """Handler called when the brand combobox text changes.
+
+        Rebuilds the dependent inputs (type/platform/width/length) to match the
+        newly selected brand. Kept lightweight: defers to _set_dynamic_widgets().
+        """
+        # Recreate dynamic widgets based on the new brand selection
+        self._set_dynamic_widgets()
 
     def get_data(self):
         def get_val(widget):
