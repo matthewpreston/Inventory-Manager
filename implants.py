@@ -131,21 +131,7 @@ class AddImplantDialog(AddDialog):
 class EditImplantDialog(EditDialog):
     def __init__(
             self,
-            inventory: list[Item],
-            parent=None
-        ):
-        super().__init__(
-            inventory=inventory,
-            parent=parent,
-            title="Edit Implant",
-            title_label="Edit Implant",
-            item_name="implant"
-        )
-
-class RemoveImplantDialog(RemoveDialog):
-    def __init__(
-            self, 
-            inventory: list[Item],
+            inventory: list[Implant],
             brand: str,
             type_: str,
             platform: str,
@@ -154,7 +140,29 @@ class RemoveImplantDialog(RemoveDialog):
             parent=None
         ):
         super().__init__(
-            inventory, 
+            inventory=inventory,
+            ItemClass=Implant,
+            header_labels=["Brand", "Type", "Platform", "Width", "Length", "REF", "LOT", "Expiry", "Qty in Stock"],
+            attributes=["brand", "type_", "platform", "width", "length", "ref", "lot", "expiry", "qty"],
+            parent=parent,
+            title="Edit Implant",
+            title_label=f"Edit from {brand} - {type_} (Platform: {platform}, Size: {width}x{length})",
+            item_name="implant"
+        )
+
+class RemoveImplantDialog(RemoveDialog):
+    def __init__(
+            self, 
+            inventory: list[Implant],
+            brand: str,
+            type_: str,
+            platform: str,
+            width: str,
+            length: str,
+            parent=None
+        ):
+        super().__init__(
+            inventory=inventory,
             header_labels=["REF", "LOT", "Expiry", "Qty in Stock"], 
             attributes=["ref", "lot", "expiry", "qty"], 
             parent=parent, 

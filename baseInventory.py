@@ -65,57 +65,6 @@ class Inventory:
         layout.addWidget(self.table)
         self.widget.setLayout(layout)
 
-    def on_selection_changed(self):
-        """Enable/disable remove button based on table selection"""
-        selected_items = self.table.selectedItems()
-        if selected_items:
-            self.selected_row = selected_items[0].row()
-            self.edit_btn.setEnabled(True)
-            self.remove_btn.setEnabled(True)
-        else:
-            self.selected_row = None
-            self.edit_btn.setEnabled(False)
-            self.remove_btn.setEnabled(False)
-
-    def add_item(self):
-        dialog: AddDialog = self.AddDialogClass(self.widget)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            try:
-                item = dialog.get_data()
-            except (AllFieldsRequiredError, InvalidDateError, InvalidQuantityError) as e:
-                QMessageBox.warning(self.widget, "Error", str(e))
-                return
-            self.inventory.append(item)
-            self.update_table()
-    
-    def update_table(self):
-        self.table.setRowCount(0)
-        now = datetime.now()
-        sorted_condensed_inventory = self._get_sorted_condensed_inventory()
-
-        for item in sorted_condensed_inventory:
-            row = self.table.rowCount()
-            self.table.insertRow(row)
-            for attr in self.attributes:
-                self.table.setItem(row, self.attributes.index(attr), QTableWidgetItem(str(item[attr])))
-            self.table.setItem(row, len(self.attributes), QTableWidgetItem(str(item["total_qty"])))
-            self.table.setItem(row, len(self.attributes) + 1, QTableWidgetItem(item["most_recent_expiry"]))
-            self.table.setItem(row, len(self.attributes) + 2, QTableWidgetItem(str(item["most_recent_expiry_qty"])))
-
-            try:
-                expiry_date = datetime.strptime(item["most_recent_expiry"], "%Y-%m-%d")
-            except Exception:
-                expiry_date = None
-            status = ""
-            if item["total_qty"] <= 2:
-                status = "⚠ Low Stock"
-            if expiry_date and (expiry_date - now).days < 180:
-                if status:
-                    status += ", Expiring Soon"
-                else:
-                    status = "⚠ Expiring Soon"
-            self.table.setItem(row, len(self.attributes) + 3, QTableWidgetItem(status))
-
     def _get_sorted_condensed_inventory(self) -> list[dict]:
         """Groups items by brand, type, platform, width, and length."""
         # Create a dictionary to hold grouped items
@@ -164,66 +113,17 @@ class Inventory:
         )
 
         return sorted_condensed
-    
-    def remove_item(self):
-        """Open dialog to remove selected item"""
-        if self.selected_row is None:
-            QMessageBox.warning(self, "Error", "Please select a row first.")
-            return
 
-        # Get stats for selected item
-        sorted_condensed_inventory = self._get_sorted_condensed_inventory()
-        selected_item = sorted_condensed_inventory[self.selected_row]
-
-        # Get all matching items from inventory
-        matching_items = [
-            item for item in self.inventory
-            if all(
-                getattr(item, attr) == selected_item[attr]
-                for attr in self.attributes
-            )
-        ]
-
-        args = {}
-        for attr in self.attributes:
-            args[attr.lower()] = selected_item[attr.lower()]
-        dialog: RemoveDialog = self.RemoveDialogClass(
-            matching_items,
-            parent=self.widget,
-            **args
-        )
-        
+    def add_item(self):
+        dialog: AddDialog = self.AddDialogClass(self.widget)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            removals = dialog.get_removals()
-            
-            for removal in removals:
-                remove_qty = removal.remove_qty
-
-                matching_item = matching_items[removal.inventory_index]
-                # Find the index in the main inventory
-                inventory_index = -1
-                for inv_item in self.inventory:
-                    if (
-                            all(
-                                getattr(inv_item, attr.lower()) == getattr(matching_item, attr.lower())
-                                for attr in self.attributes
-                            ) and
-                            inv_item.ref == matching_item.ref and
-                            inv_item.lot == matching_item.lot and
-                            inv_item.expiry == matching_item.expiry
-                        ):
-                        inventory_index = self.inventory.index(inv_item)
-                        break
-
-                if inventory_index == -1:
-                    continue  # Should not happen
-                if self.inventory[inventory_index].qty > remove_qty:
-                    self.inventory[inventory_index].qty -= remove_qty
-                else:
-                    del self.inventory[inventory_index]
-            
+            try:
+                item = dialog.get_data()
+            except (AllFieldsRequiredError, InvalidDateError, InvalidQuantityError) as e:
+                QMessageBox.warning(self.widget, "Error", str(e))
+                return
+            self.inventory.append(item)
             self.update_table()
-            QMessageBox.information(self.widget, "Success", f"{len(removals)} {self.item_name}s removed successfully.")
 
     def edit_item(self):
         """Open dialog to edit selected item(s)"""
@@ -243,18 +143,22 @@ class Inventory:
             )
         ]
 
+        args = {}
+        for attr in self.attributes:
+            args[attr] = selected_item[attr]
         dialog: EditDialog = self.EditDialogClass(
             matching_items,
-            parent=self.widget
+            parent=self.widget,
+            **args
         )
 
         if dialog.exec() == QDialog.DialogCode.Accepted:
             edits = dialog.get_edits()
             applied = 0
 
-            for edit in edits:
+            for original, new in edits:
                 # Find the corresponding matching_item from the dialog's inventory_index
-                matching_item = matching_items[edit['inventory_index']]
+                matching_item = matching_items[original.inventory_index]
                 # Find the index in the main inventory using original values
                 inventory_index = -1
                 for inv_item in self.inventory:
@@ -263,9 +167,9 @@ class Inventory:
                             getattr(inv_item, attr) == getattr(matching_item, attr)
                             for attr in self.attributes
                         ) and
-                        inv_item.ref == edit['original_ref'] and
-                        inv_item.lot == edit['original_lot'] and
-                        inv_item.expiry == edit['original_expiry']
+                        inv_item.ref == original.item.ref and
+                        inv_item.lot == original.item.lot and
+                        inv_item.expiry == original.item.expiry
                     ):
                         inventory_index = self.inventory.index(inv_item)
                         break
@@ -274,35 +178,16 @@ class Inventory:
                     continue
 
                 # Apply edits
-                self.inventory[inventory_index].ref = edit['new_ref']
-                self.inventory[inventory_index].lot = edit['new_lot']
-                self.inventory[inventory_index].expiry = edit['new_expiry']
-                self.inventory[inventory_index].qty = edit['new_qty']
+                for attr in self.attributes:
+                    setattr(self.inventory[inventory_index], attr, getattr(new, attr))
+                self.inventory[inventory_index].ref = new.ref
+                self.inventory[inventory_index].lot = new.lot
+                self.inventory[inventory_index].expiry = new.expiry
+                self.inventory[inventory_index].qty = new.qty
                 applied += 1
 
             self.update_table()
-            QMessageBox.information(self.widget, "Success", f"{applied} {self.item_name}s edited successfully.")
-
-    def save_data(self):
-        # Save items to CSV file
-        try:
-            with open(self.inventory_file, "w", newline="") as f:
-                writer = csv.writer(f)
-                # Write header
-                writer.writerow(self.header_labels + ["REF", "LOT", "Expiry", "Qty"])
-                for item in self.inventory:
-                    writer.writerow(
-                        [getattr(item, attr) for attr in self.attributes] +
-                        [
-                            item.ref,
-                            item.lot,
-                            item.expiry,
-                            item.qty
-                        ]
-                    )
-            QMessageBox.information(self.widget, "Saved", f"{self.item_name.capitalize()}s saved to {self.inventory_file}.")
-        except Exception as e:
-            QMessageBox.warning(self.widget, "Save Error", f"Failed to save {self.item_name}s: {e}")
+            QMessageBox.information(self.widget, "Success", f"{applied} kinds of {self.item_name}s edited successfully.")
 
     def load_data(self):
         # Load items from CSV file
@@ -342,3 +227,124 @@ class Inventory:
             QMessageBox.warning(self.widget, "Load Error", f"Failed to load {self.item_name}s: {e}")
             QMessageBox.information(self.widget, "Info", f"No existing {self.item_name} inventory file found. A new one will be created upon saving.")
             self.inventory = []
+
+    def on_selection_changed(self):
+        """Enable/disable remove button based on table selection"""
+        selected_items = self.table.selectedItems()
+        if selected_items:
+            self.selected_row = selected_items[0].row()
+            self.edit_btn.setEnabled(True)
+            self.remove_btn.setEnabled(True)
+        else:
+            self.selected_row = None
+            self.edit_btn.setEnabled(False)
+            self.remove_btn.setEnabled(False)
+
+    def remove_item(self):
+        """Open dialog to remove selected item"""
+        if self.selected_row is None:
+            QMessageBox.warning(self, "Error", "Please select a row first.")
+            return
+
+        # Get stats for selected item
+        sorted_condensed_inventory = self._get_sorted_condensed_inventory()
+        selected_item = sorted_condensed_inventory[self.selected_row]
+
+        # Get all matching items from inventory
+        matching_items = [
+            item for item in self.inventory
+            if all(
+                getattr(item, attr) == selected_item[attr]
+                for attr in self.attributes
+            )
+        ]
+
+        args = {}
+        for attr in self.attributes:
+            args[attr] = selected_item[attr]
+        dialog: RemoveDialog = self.RemoveDialogClass(
+            matching_items,
+            parent=self.widget,
+            **args
+        )
+        
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            removals = dialog.get_removals()
+            
+            for removal in removals:
+                remove_qty = removal.remove_qty
+
+                matching_item = matching_items[removal.inventory_index]
+                # Find the index in the main inventory
+                inventory_index = -1
+                for inv_item in self.inventory:
+                    if (
+                            all(
+                                getattr(inv_item, attr) == getattr(matching_item, attr)
+                                for attr in self.attributes
+                            ) and
+                            inv_item.ref == matching_item.ref and
+                            inv_item.lot == matching_item.lot and
+                            inv_item.expiry == matching_item.expiry
+                        ):
+                        inventory_index = self.inventory.index(inv_item)
+                        break
+
+                if inventory_index == -1:
+                    continue  # Should not happen
+                if self.inventory[inventory_index].qty > remove_qty:
+                    self.inventory[inventory_index].qty -= remove_qty
+                else:
+                    del self.inventory[inventory_index]
+            
+            self.update_table()
+            QMessageBox.information(self.widget, "Success", f"{len(removals)} {self.item_name}s removed successfully.")
+
+    def save_data(self):
+        # Save items to CSV file
+        try:
+            with open(self.inventory_file, "w", newline="") as f:
+                writer = csv.writer(f)
+                # Write header
+                writer.writerow(self.header_labels + ["REF", "LOT", "Expiry", "Qty"])
+                for item in self.inventory:
+                    writer.writerow(
+                        [getattr(item, attr) for attr in self.attributes] +
+                        [
+                            item.ref,
+                            item.lot,
+                            item.expiry,
+                            item.qty
+                        ]
+                    )
+            QMessageBox.information(self.widget, "Saved", f"{self.item_name.capitalize()}s saved to {self.inventory_file}.")
+        except Exception as e:
+            QMessageBox.warning(self.widget, "Save Error", f"Failed to save {self.item_name}s: {e}")
+
+    def update_table(self):
+        self.table.setRowCount(0)
+        now = datetime.now()
+        sorted_condensed_inventory = self._get_sorted_condensed_inventory()
+
+        for item in sorted_condensed_inventory:
+            row = self.table.rowCount()
+            self.table.insertRow(row)
+            for attr in self.attributes:
+                self.table.setItem(row, self.attributes.index(attr), QTableWidgetItem(str(item[attr])))
+            self.table.setItem(row, len(self.attributes), QTableWidgetItem(str(item["total_qty"])))
+            self.table.setItem(row, len(self.attributes) + 1, QTableWidgetItem(item["most_recent_expiry"]))
+            self.table.setItem(row, len(self.attributes) + 2, QTableWidgetItem(str(item["most_recent_expiry_qty"])))
+
+            try:
+                expiry_date = datetime.strptime(item["most_recent_expiry"], "%Y-%m-%d")
+            except Exception:
+                expiry_date = None
+            status = ""
+            if item["total_qty"] <= 2:
+                status = "⚠ Low Stock"
+            if expiry_date and (expiry_date - now).days < 180:
+                if status:
+                    status += ", Expiring Soon"
+                else:
+                    status = "⚠ Expiring Soon"
+            self.table.setItem(row, len(self.attributes) + 3, QTableWidgetItem(status))

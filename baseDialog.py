@@ -2,8 +2,27 @@ from datetime import datetime
 from PyQt6.QtWidgets import (
     QDialog, QDialogButtonBox, QComboBox, QFormLayout, QInputDialog, QVBoxLayout, QLabel, QLineEdit, QTableWidget, QTableWidgetItem, QHeaderView, QSpinBox, QMessageBox
 )
-from baseItem import Item, RemovalItem
+from baseItem import Item, EditItem, RemovalItem
 from exceptions import AllFieldsRequiredError, InvalidDateError, InvalidQuantityError
+
+def _check_all_fields_filled(fields: dict) -> None:
+    # Helper to check all fields are filled
+    if not all(value.strip() for value in fields.values()):
+        raise AllFieldsRequiredError("All fields are required.")
+        
+def _check_expiry_date(expiry: str) -> datetime:
+    # Helper to validate expiry date format
+    try:
+        return datetime.strptime(expiry, "%Y-%m-%d")
+    except ValueError:
+        raise InvalidDateError("Expiry must be YYYY-MM-DD")
+    
+def _check_quantity(qty: str) -> int:
+    # Helper to validate quantity is an integer
+    try:
+        return int(qty)
+    except ValueError:
+        raise InvalidQuantityError("Quantity must be a number")
 
 class AddDialog(QDialog):
     def __init__(self, parent=None, title="Add Item"):
@@ -56,25 +75,6 @@ class AddDialog(QDialog):
                 brands_sorted = sorted(self._brand_list)
                 self.brand_input.setCurrentText(brands_sorted[0])
 
-    def _check_all_fields_filled(self, fields: dict) -> None:
-        # Helper to check all fields are filled
-        if not all(value.strip() for value in fields.values()):
-            raise AllFieldsRequiredError("All fields are required.")
-        
-    def _check_expiry_date(self, expiry: str) -> datetime:
-        # Helper to validate expiry date format
-        try:
-            return datetime.strptime(expiry, "%Y-%m-%d")
-        except ValueError:
-            raise InvalidDateError("Expiry must be YYYY-MM-DD")
-        
-    def _check_quantity(self, qty: str) -> int:
-        # Helper to validate quantity is an integer
-        try:
-            return int(qty)
-        except ValueError:
-            raise InvalidQuantityError("Quantity must be a number")
-
     def get_data(self) -> Item:
         """Gather data from inputs and return Item instance"""            
         brand=self.brand_input.currentText().strip()
@@ -84,15 +84,15 @@ class AddDialog(QDialog):
         lot=self.lot_input.text().strip()
 
         # Validate inputs, raising exceptions as needed
-        self._check_all_fields_filled({
+        _check_all_fields_filled({
             "brand": brand,
             "expiry": expiry,
             "qty": qty,
             "ref": ref,
             "lot": lot
         })
-        expiry_date = self._check_expiry_date(expiry)
-        qty = self._check_quantity(qty)
+        expiry_date = _check_expiry_date(expiry)
+        qty = _check_quantity(qty)
 
         return Item(
             brand=brand,
@@ -101,6 +101,100 @@ class AddDialog(QDialog):
             ref=ref,
             lot=lot
         )
+
+class EditDialog(QDialog):
+    def __init__(
+                self,
+                inventory: list[Item],
+                ItemClass: type[Item],
+                header_labels: list[str], 
+                attributes: list[str], 
+                parent=None,
+                title: str = "Edit Item",
+                title_label: str = "Edit Item",
+                item_name: str = "item"
+            ):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setModal(True)
+        self.setGeometry(300, 300, 700, 400)
+
+        self.inventory = inventory
+        self.ItemClass = ItemClass
+        self.header_labels = header_labels
+        self.attributes = attributes
+        self.item_name = item_name
+
+        layout = QVBoxLayout(self)
+        title_label = QLabel(title_label)
+        layout.addWidget(title_label)
+
+        # Table with editable columns
+        self.table = QTableWidget()
+        self.table.setColumnCount(len(self.header_labels))
+        self.table.setHorizontalHeaderLabels(self.header_labels)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
+        # Populate table with matching items
+        for item in self.inventory:
+            row = self.table.rowCount()
+            self.table.insertRow(row)
+
+            for i, attribute in enumerate(self.attributes):
+                self.table.setItem(row, i, QTableWidgetItem(str(getattr(item, attribute))))
+
+        # Allow editing in the table
+        self.table.setEditTriggers(QTableWidget.EditTrigger.AllEditTriggers)
+        layout.addWidget(self.table)
+
+        # OK / Cancel
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        button_box.accepted.connect(self.on_ok_clicked)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+
+    def on_ok_clicked(self):
+        """Validate edits, show confirmation, and accept if confirmed."""
+        edits: list[tuple[EditItem, Item]] = []
+
+        for row, original_item in enumerate(self.inventory):
+            new = {}
+            for col, attribute in enumerate(self.attributes):
+                new_value = self.table.item(row, col).text().strip() if self.table.item(row, col) else ""
+                new[attribute] = new_value
+
+            # Basic validation
+            _check_all_fields_filled(new)
+            new["expiry"] = _check_expiry_date(new.get("expiry")).strftime("%Y-%m-%d")
+            new["qty"] = _check_quantity(new.get("qty"))
+
+            new_item = self.ItemClass(**new)
+            edits.append((EditItem(original_item, row), new_item))
+
+        # Confirmation
+        confirmation_text = f"You have made the following edits to {self.item_name}s:\n\n"
+        for (o, n) in edits:
+            original_line = ", ".join(f"{h}: {getattr(o.item, a)}" for h, a in zip(self.header_labels, self.attributes))
+            new_line = ", ".join(f"{h}: {getattr(n, a)}" for h, a in zip(self.header_labels, self.attributes))
+            confirmation_text += (
+                f"Original: {original_line}\n"
+                f" -> New: {new_line}\n\n"
+            )
+        confirmation_text += "Do you want to apply these changes?"
+
+        reply = QMessageBox.question(
+            self,
+            "Confirm Edits",
+            confirmation_text,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.edits = edits
+            self.accept()
+
+    def get_edits(self) -> list[tuple[EditItem, Item]]:
+        return getattr(self, 'edits', [])
 
 class RemoveDialog(QDialog):
     def __init__(
@@ -124,7 +218,6 @@ class RemoveDialog(QDialog):
         self.item_name = item_name
 
         layout = QVBoxLayout(self)
-        
         title_label = QLabel(title_label)
         layout.addWidget(title_label)
         
@@ -178,11 +271,7 @@ class RemoveDialog(QDialog):
             QMessageBox.information(self, "No Selection", f"Please select at least one {self.item_name} to remove.")
             return
         
-        # Show confirmation dialog
-        self.show_confirmation(removals)
-    
-    def show_confirmation(self, removals: list[RemovalItem]):
-        """Show confirmation dialog with removal details"""
+        # Confirmation dialog
         confirmation_text = f"You have selected the following {self.item_name}s to remove:\n\n"
         
         for removal in removals:
@@ -209,115 +298,3 @@ class RemoveDialog(QDialog):
     def get_removals(self) -> list[RemovalItem]:
         """Return list of removal operations"""
         return getattr(self, 'removals', [])
-
-
-class EditDialog(QDialog):
-    def __init__(
-                self,
-                inventory: list[Item],
-                parent=None,
-                title: str = "Edit Item",
-                title_label: str = "Edit Item",
-                item_name: str = "item"
-            ):
-        super().__init__(parent)
-        self.setWindowTitle(title)
-        self.setModal(True)
-        self.setGeometry(300, 300, 700, 400)
-
-        self.inventory = inventory
-        self.item_name = item_name
-
-        layout = QVBoxLayout(self)
-        title_lbl = QLabel(title_label)
-        layout.addWidget(title_lbl)
-
-        # Table with editable columns for REF, LOT, Expiry, Qty
-        self.table = QTableWidget()
-        self.table.setColumnCount(4)
-        self.table.setHorizontalHeaderLabels(["REF", "LOT", "Expiry", "Qty"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-
-        for item in self.inventory:
-            row = self.table.rowCount()
-            self.table.insertRow(row)
-            self.table.setItem(row, 0, QTableWidgetItem(str(item.ref)))
-            self.table.setItem(row, 1, QTableWidgetItem(str(item.lot)))
-            self.table.setItem(row, 2, QTableWidgetItem(str(item.expiry)))
-            self.table.setItem(row, 3, QTableWidgetItem(str(item.qty)))
-
-        # Allow editing in the table
-        self.table.setEditTriggers(QTableWidget.EditTrigger.AllEditTriggers)
-        layout.addWidget(self.table)
-
-        # OK / Cancel
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        button_box.accepted.connect(self.on_ok_clicked)
-        button_box.rejected.connect(self.reject)
-        layout.addWidget(button_box)
-
-    def on_ok_clicked(self):
-        """Validate edits, show confirmation, and accept if confirmed."""
-        edits = []
-
-        for row, original_item in enumerate(self.inventory):
-            ref_item = self.table.item(row, 0)
-            lot_item = self.table.item(row, 1)
-            expiry_item = self.table.item(row, 2)
-            qty_item = self.table.item(row, 3)
-
-            ref = ref_item.text().strip() if ref_item else ""
-            lot = lot_item.text().strip() if lot_item else ""
-            expiry = expiry_item.text().strip() if expiry_item else ""
-            qty_text = qty_item.text().strip() if qty_item else ""
-
-            # Basic validation
-            if not all([ref, lot, expiry, qty_text]):
-                QMessageBox.warning(self, "Error", "All fields are required for each item.")
-                return
-
-            try:
-                datetime.strptime(expiry, "%Y-%m-%d")
-            except ValueError:
-                QMessageBox.warning(self, "Error", f"Invalid expiry date in row {row+1}. Use YYYY-MM-DD.")
-                return
-
-            try:
-                qty = int(qty_text)
-            except ValueError:
-                QMessageBox.warning(self, "Error", f"Invalid quantity in row {row+1}. Must be an integer.")
-                return
-
-            edits.append({
-                "original_ref": original_item.ref,
-                "original_lot": original_item.lot,
-                "original_expiry": original_item.expiry,
-                "new_ref": ref,
-                "new_lot": lot,
-                "new_expiry": expiry,
-                "new_qty": qty,
-                "inventory_index": row
-            })
-
-        # Confirmation
-        confirmation_text = f"You have made the following edits to {self.item_name}s:\n\n"
-        for e in edits:
-            confirmation_text += (
-                f"Original REF: {e['original_ref']}, LOT: {e['original_lot']}, Expiry: {e['original_expiry']}\n"
-                f" -> New REF: {e['new_ref']}, LOT: {e['new_lot']}, Expiry: {e['new_expiry']}, Qty: {e['new_qty']}\n\n"
-            )
-        confirmation_text += "Do you want to apply these changes?"
-
-        reply = QMessageBox.question(
-            self,
-            "Confirm Edits",
-            confirmation_text,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-
-        if reply == QMessageBox.StandardButton.Yes:
-            self.edits = edits
-            self.accept()
-
-    def get_edits(self) -> list[dict]:
-        return getattr(self, 'edits', [])

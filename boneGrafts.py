@@ -90,34 +90,43 @@ class AddBoneGraftDialog(AddDialog):
 class EditBoneGraftDialog(EditDialog):
     def __init__(
             self,
-            inventory: list[Item],
+            inventory: list[BoneGraft],
+            brand: str,
+            type_: str,
+            particulate: str,
+            granule_size: str,
+            amount: str,
+            sn: str,
             parent=None
         ):
         super().__init__(
             inventory=inventory,
+            ItemClass=BoneGraft,
+            header_labels=["Brand", "Type", "Particulate", "Granule Size", "Amount", "SN", "REF", "LOT", "Expiry", "Qty in Stock"],
+            attributes=["brand", "type_", "particulate", "granule_size", "amount", "sn", "ref", "lot", "expiry", "qty"],
             parent=parent,
             title="Edit Bone Graft",
-            title_label="Edit Bone Graft",
+            title_label=f"Edit from {brand} - {type_} (Particulate: {particulate}, Granule Size: {granule_size}, Amount: {amount}, SN: {sn})",
             item_name="bone graft"
         )
 
 class RemoveBoneGraftDialog(RemoveDialog):
     def __init__(
-                self, 
-                inventory: list[Item], 
-                brand: str,
-                type_: str,
-                particulate: str,
-                granule_size: str,
-                amount: str,
-                parent=None
-            ):
+            self, 
+            inventory: list[BoneGraft],
+            brand: str,
+            type_: str,
+            particulate: str,
+            granule_size: str,
+            amount: str,
+            parent=None
+        ):
         super().__init__(
-            inventory, 
+            inventory=inventory,
             header_labels=["SN", "REF", "LOT", "Expiry", "Qty in Stock"], 
             attributes=["sn", "ref", "lot", "expiry", "qty"], 
-            parent=parent, 
-            title="Remove Bone Graft", 
+            parent=parent,
+            title="Remove Bone Graft",
             title_label=f"Remove from {brand} - {type_} (Particulate: {particulate}, Granule Size: {granule_size}, Amount: {amount})",
             item_name="bone graft"
         )

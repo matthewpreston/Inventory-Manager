@@ -1,7 +1,7 @@
 Brand,Type,Platform,Width,Length,REF,LOT,Expiry,Qty
 Nobel,NobelActive TiUltra,RP,4.3,10.0,1234,12346,2026-09-13,1
 Nobel,NobelParallel TiUltra,3.0,3.0,7.0,245213,213123,2026-03-22,1
-Nobel,NobelParallel TiUltra,3.0,3.0,7.0,21421,214124,2026-01-22,2
+Nobel,NobelParallel TiUltra,3.0,3.0,7.0,2,214124,2026-01-22,3
 Nobel,NobelParallel TiUltra,3.0,3.0,7.0,1,1,2025-01-22,1
 Nobel,NobelParallel TiUltra,3.0,3.0,8.5,1,1,2022-01-22,1
 Nobel,NobelParallel TiUltra,WP,5.5,7.0,132141,34234,2027-02-12,1

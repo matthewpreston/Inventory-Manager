@@ -131,35 +131,43 @@ class AddHealingAbutmentDialog(AddDialog):
 class EditHealingAbutmentDialog(EditDialog):
     def __init__(
             self,
-            inventory: list[Item],
+            inventory: list[HealingAbutment],
+            brand: str,
+            type_: str,
+            platform: str,
+            width: str,
+            height: str,
             parent=None
         ):
         super().__init__(
             inventory=inventory,
+            ItemClass=HealingAbutment,
+            header_labels=["Brand", "Type", "Platform", "Width", "Height", "REF", "LOT", "Expiry", "Qty in Stock"],
+            attributes=["brand", "type_", "platform", "width", "height", "ref", "lot", "expiry", "qty"],
             parent=parent,
             title="Edit Healing Abutment",
-            title_label="Edit Healing Abutment",
+            title_label=f"Edit from {brand} - {type_} (Platform: {platform}, Size: {width}x{height})",
             item_name="healing abutment"
         )
 
 class RemoveHealingAbutmentDialog(RemoveDialog):
     def __init__(
             self, 
-            inventory: list[Item],
+            inventory: list[HealingAbutment],
             brand: str,
             type_: str,
             platform: str,
             width: str,
-            length: str,
+            height: str,
             parent=None
         ):
         super().__init__(
-            inventory, 
+            inventory=inventory,
             header_labels=["REF", "LOT", "Expiry", "Qty in Stock"], 
             attributes=["ref", "lot", "expiry", "qty"], 
             parent=parent, 
             title="Remove Healing Abutment", 
-            title_label=f"Remove from {brand} - {type_} (Platform: {platform}, Size: {width}x{length})",
+            title_label=f"Remove from {brand} - {type_} (Platform: {platform}, Size: {width}x{height})",
             item_name="healing abutment"
         )
 
