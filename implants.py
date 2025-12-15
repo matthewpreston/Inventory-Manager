@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (
     QComboBox, QLabel, QLineEdit
 )
-from baseDialog import AddDialog, RemoveDialog
+from baseDialog import AddDialog, EditDialog, RemoveDialog
 from baseInventory import Inventory
 from baseItem import Item
 
@@ -127,18 +127,32 @@ class AddImplantDialog(AddDialog):
             expiry=expiry_date.strftime("%Y-%m-%d"),
             qty=qty
         )
-    
+
+class EditImplantDialog(EditDialog):
+    def __init__(
+            self,
+            inventory: list[Item],
+            parent=None
+        ):
+        super().__init__(
+            inventory=inventory,
+            parent=parent,
+            title="Edit Implant",
+            title_label="Edit Implant",
+            item_name="implant"
+        )
+
 class RemoveImplantDialog(RemoveDialog):
     def __init__(
-                self, 
-                inventory: list[Item],
-                brand: str,
-                type_: str,
-                platform: str,
-                width: str,
-                length: str,
-                parent=None
-            ):
+            self, 
+            inventory: list[Item],
+            brand: str,
+            type_: str,
+            platform: str,
+            width: str,
+            length: str,
+            parent=None
+        ):
         super().__init__(
             inventory, 
             header_labels=["REF", "LOT", "Expiry", "Qty in Stock"], 
@@ -153,14 +167,18 @@ class ImplantInventory(Inventory):
     def __init__(
             self,
             inventory_file: str,
+        ):
+        super().__init__(
+            inventory_file=inventory_file,
             ItemClass=Implant,
             AddDialogClass=AddImplantDialog,
+            EditDialogClass=EditImplantDialog,
             RemoveDialogClass=RemoveImplantDialog,
             header_labels=[
                 "Brand", "Type", "Platform", "Width", "Length"
             ],
-            attribute_labels=[
+            attributes=[
                 "brand", "type_", "platform", "width", "length"
             ],
-            item_name="implant"):
-        super().__init__(inventory_file, ItemClass, AddDialogClass, RemoveDialogClass, header_labels, attribute_labels, item_name)
+            item_name="implant"
+        )

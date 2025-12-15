@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (
     QComboBox, QLabel, QLineEdit
 )
-from baseDialog import AddDialog, RemoveDialog
+from baseDialog import AddDialog, EditDialog, RemoveDialog
 from baseInventory import Inventory
 from baseItem import Item
 
@@ -87,6 +87,20 @@ class AddBoneGraftDialog(AddDialog):
             qty=qty
         )
 
+class EditBoneGraftDialog(EditDialog):
+    def __init__(
+            self,
+            inventory: list[Item],
+            parent=None
+        ):
+        super().__init__(
+            inventory=inventory,
+            parent=parent,
+            title="Edit Bone Graft",
+            title_label="Edit Bone Graft",
+            item_name="bone graft"
+        )
+
 class RemoveBoneGraftDialog(RemoveDialog):
     def __init__(
                 self, 
@@ -111,15 +125,19 @@ class RemoveBoneGraftDialog(RemoveDialog):
 class BoneGraftInventory(Inventory):
     def __init__(
             self,
-            inventory_file: str,
+            inventory_file: str
+            ):
+        super().__init__(
+            inventory_file=inventory_file,
             ItemClass=BoneGraft,
             AddDialogClass=AddBoneGraftDialog,
+            EditDialogClass=EditBoneGraftDialog,
             RemoveDialogClass=RemoveBoneGraftDialog,
             header_labels=[
                 "Brand", "Type", "Particulate", "Granule Size", "Amount", "SN"
             ],
-            attribute_labels=[
+            attributes=[
                 "brand", "type_", "particulate", "granule_size", "amount", "sn"
             ],
-            item_name="bone graft"):
-        super().__init__(inventory_file, ItemClass, AddDialogClass, RemoveDialogClass, header_labels, attribute_labels, item_name)
+            item_name="bone graft"
+        )

@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QTableWidget, QTableWidgetItem,
     QMessageBox, QHeaderView, QDialog
 )
-from baseDialog import AddDialog, RemoveDialog
+from baseDialog import AddDialog, EditDialog, RemoveDialog
 from baseItem import Item
 from exceptions import AllFieldsRequiredError, InvalidDateError, InvalidQuantityError
 
@@ -15,6 +15,7 @@ class Inventory:
             inventory_file: str,
             ItemClass: type[Item],
             AddDialogClass: AddDialog,
+            EditDialogClass: EditDialog,
             RemoveDialogClass: RemoveDialog,
             header_labels: list[str],
             attributes: list[str],
@@ -23,6 +24,7 @@ class Inventory:
         self.inventory_file = inventory_file
         self.ItemClass = ItemClass
         self.AddDialogClass = AddDialogClass
+        self.EditDialogClass = EditDialogClass
         self.RemoveDialogClass = RemoveDialogClass
         self.header_labels = header_labels
         self.attributes = attributes
@@ -39,13 +41,17 @@ class Inventory:
         btn_layout = QHBoxLayout()
         self.add_btn = QPushButton(f"Add {self.item_name.title()}")
         self.add_btn.clicked.connect(self.add_item)
+        btn_layout.addWidget(self.add_btn)
+        self.edit_btn = QPushButton(f"Edit {self.item_name.title()}")
+        self.edit_btn.clicked.connect(self.edit_item)
+        self.edit_btn.setEnabled(False)
+        btn_layout.addWidget(self.edit_btn)
         self.remove_btn = QPushButton(f"Remove {self.item_name.title()}")
         self.remove_btn.clicked.connect(self.remove_item)
         self.remove_btn.setEnabled(False)
+        btn_layout.addWidget(self.remove_btn)
         self.save_btn = QPushButton("Save All")
         self.save_btn.clicked.connect(self.save_data)
-        btn_layout.addWidget(self.add_btn)
-        btn_layout.addWidget(self.remove_btn)
         btn_layout.addWidget(self.save_btn)
         layout.addLayout(btn_layout)
         
@@ -64,9 +70,11 @@ class Inventory:
         selected_items = self.table.selectedItems()
         if selected_items:
             self.selected_row = selected_items[0].row()
+            self.edit_btn.setEnabled(True)
             self.remove_btn.setEnabled(True)
         else:
             self.selected_row = None
+            self.edit_btn.setEnabled(False)
             self.remove_btn.setEnabled(False)
 
     def add_item(self):
@@ -216,6 +224,64 @@ class Inventory:
             
             self.update_table()
             QMessageBox.information(self.widget, "Success", f"{len(removals)} {self.item_name}s removed successfully.")
+
+    def edit_item(self):
+        """Open dialog to edit selected item(s)"""
+        if self.selected_row is None:
+            QMessageBox.warning(self, "Error", "Please select a row first.")
+            return
+
+        sorted_condensed_inventory = self._get_sorted_condensed_inventory()
+        selected_item = sorted_condensed_inventory[self.selected_row]
+
+        # Get all matching items from inventory
+        matching_items = [
+            item for item in self.inventory
+            if all(
+                getattr(item, attr) == selected_item[attr]
+                for attr in self.attributes
+            )
+        ]
+
+        dialog: EditDialog = self.EditDialogClass(
+            matching_items,
+            parent=self.widget
+        )
+
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            edits = dialog.get_edits()
+            applied = 0
+
+            for edit in edits:
+                # Find the corresponding matching_item from the dialog's inventory_index
+                matching_item = matching_items[edit['inventory_index']]
+                # Find the index in the main inventory using original values
+                inventory_index = -1
+                for inv_item in self.inventory:
+                    if (
+                        all(
+                            getattr(inv_item, attr) == getattr(matching_item, attr)
+                            for attr in self.attributes
+                        ) and
+                        inv_item.ref == edit['original_ref'] and
+                        inv_item.lot == edit['original_lot'] and
+                        inv_item.expiry == edit['original_expiry']
+                    ):
+                        inventory_index = self.inventory.index(inv_item)
+                        break
+
+                if inventory_index == -1:
+                    continue
+
+                # Apply edits
+                self.inventory[inventory_index].ref = edit['new_ref']
+                self.inventory[inventory_index].lot = edit['new_lot']
+                self.inventory[inventory_index].expiry = edit['new_expiry']
+                self.inventory[inventory_index].qty = edit['new_qty']
+                applied += 1
+
+            self.update_table()
+            QMessageBox.information(self.widget, "Success", f"{applied} {self.item_name}s edited successfully.")
 
     def save_data(self):
         # Save items to CSV file

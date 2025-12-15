@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (
     QComboBox, QLabel, QLineEdit
 )
-from baseDialog import AddDialog, RemoveDialog
+from baseDialog import AddDialog, EditDialog, RemoveDialog
 from baseInventory import Inventory
 from baseItem import Item
 
@@ -128,17 +128,31 @@ class AddHealingAbutmentDialog(AddDialog):
             qty=qty
         )
 
+class EditHealingAbutmentDialog(EditDialog):
+    def __init__(
+            self,
+            inventory: list[Item],
+            parent=None
+        ):
+        super().__init__(
+            inventory=inventory,
+            parent=parent,
+            title="Edit Healing Abutment",
+            title_label="Edit Healing Abutment",
+            item_name="healing abutment"
+        )
+
 class RemoveHealingAbutmentDialog(RemoveDialog):
     def __init__(
-                self, 
-                inventory: list[Item],
-                brand: str,
-                type_: str,
-                platform: str,
-                width: str,
-                length: str,
-                parent=None
-            ):
+            self, 
+            inventory: list[Item],
+            brand: str,
+            type_: str,
+            platform: str,
+            width: str,
+            length: str,
+            parent=None
+        ):
         super().__init__(
             inventory, 
             header_labels=["REF", "LOT", "Expiry", "Qty in Stock"], 
@@ -153,14 +167,18 @@ class HealingAbutmentInventory(Inventory):
     def __init__(
             self,
             inventory_file: str,
+        ):
+        super().__init__(
+            inventory_file=inventory_file,
             ItemClass=HealingAbutment,
             AddDialogClass=AddHealingAbutmentDialog,
+            EditDialogClass=EditHealingAbutmentDialog,
             RemoveDialogClass=RemoveHealingAbutmentDialog,
             header_labels=[
                 "Brand", "Type", "Platform", "Width", "Height"
             ],
-            attribute_labels=[
+            attributes=[
                 "brand", "type_", "platform", "width", "height"
             ],
-            item_name="healing abutment"):
-        super().__init__(inventory_file, ItemClass, AddDialogClass, RemoveDialogClass, header_labels, attribute_labels, item_name)
+            item_name="healing abutment"
+        )

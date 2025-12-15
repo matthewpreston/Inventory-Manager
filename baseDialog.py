@@ -108,7 +108,7 @@ class RemoveDialog(QDialog):
                 inventory: list[Item], 
                 header_labels: list[str], 
                 attributes: list[str], 
-                parent=None, 
+                parent=None,
                 title="Remove Item", 
                 title_label="Remove Item",
                 item_name="item"
@@ -209,3 +209,115 @@ class RemoveDialog(QDialog):
     def get_removals(self) -> list[RemovalItem]:
         """Return list of removal operations"""
         return getattr(self, 'removals', [])
+
+
+class EditDialog(QDialog):
+    def __init__(
+                self,
+                inventory: list[Item],
+                parent=None,
+                title: str = "Edit Item",
+                title_label: str = "Edit Item",
+                item_name: str = "item"
+            ):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setModal(True)
+        self.setGeometry(300, 300, 700, 400)
+
+        self.inventory = inventory
+        self.item_name = item_name
+
+        layout = QVBoxLayout(self)
+        title_lbl = QLabel(title_label)
+        layout.addWidget(title_lbl)
+
+        # Table with editable columns for REF, LOT, Expiry, Qty
+        self.table = QTableWidget()
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["REF", "LOT", "Expiry", "Qty"])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
+        for item in self.inventory:
+            row = self.table.rowCount()
+            self.table.insertRow(row)
+            self.table.setItem(row, 0, QTableWidgetItem(str(item.ref)))
+            self.table.setItem(row, 1, QTableWidgetItem(str(item.lot)))
+            self.table.setItem(row, 2, QTableWidgetItem(str(item.expiry)))
+            self.table.setItem(row, 3, QTableWidgetItem(str(item.qty)))
+
+        # Allow editing in the table
+        self.table.setEditTriggers(QTableWidget.EditTrigger.AllEditTriggers)
+        layout.addWidget(self.table)
+
+        # OK / Cancel
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        button_box.accepted.connect(self.on_ok_clicked)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+
+    def on_ok_clicked(self):
+        """Validate edits, show confirmation, and accept if confirmed."""
+        edits = []
+
+        for row, original_item in enumerate(self.inventory):
+            ref_item = self.table.item(row, 0)
+            lot_item = self.table.item(row, 1)
+            expiry_item = self.table.item(row, 2)
+            qty_item = self.table.item(row, 3)
+
+            ref = ref_item.text().strip() if ref_item else ""
+            lot = lot_item.text().strip() if lot_item else ""
+            expiry = expiry_item.text().strip() if expiry_item else ""
+            qty_text = qty_item.text().strip() if qty_item else ""
+
+            # Basic validation
+            if not all([ref, lot, expiry, qty_text]):
+                QMessageBox.warning(self, "Error", "All fields are required for each item.")
+                return
+
+            try:
+                datetime.strptime(expiry, "%Y-%m-%d")
+            except ValueError:
+                QMessageBox.warning(self, "Error", f"Invalid expiry date in row {row+1}. Use YYYY-MM-DD.")
+                return
+
+            try:
+                qty = int(qty_text)
+            except ValueError:
+                QMessageBox.warning(self, "Error", f"Invalid quantity in row {row+1}. Must be an integer.")
+                return
+
+            edits.append({
+                "original_ref": original_item.ref,
+                "original_lot": original_item.lot,
+                "original_expiry": original_item.expiry,
+                "new_ref": ref,
+                "new_lot": lot,
+                "new_expiry": expiry,
+                "new_qty": qty,
+                "inventory_index": row
+            })
+
+        # Confirmation
+        confirmation_text = f"You have made the following edits to {self.item_name}s:\n\n"
+        for e in edits:
+            confirmation_text += (
+                f"Original REF: {e['original_ref']}, LOT: {e['original_lot']}, Expiry: {e['original_expiry']}\n"
+                f" -> New REF: {e['new_ref']}, LOT: {e['new_lot']}, Expiry: {e['new_expiry']}, Qty: {e['new_qty']}\n\n"
+            )
+        confirmation_text += "Do you want to apply these changes?"
+
+        reply = QMessageBox.question(
+            self,
+            "Confirm Edits",
+            confirmation_text,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.edits = edits
+            self.accept()
+
+    def get_edits(self) -> list[dict]:
+        return getattr(self, 'edits', [])
