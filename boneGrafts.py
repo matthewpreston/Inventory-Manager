@@ -18,6 +18,55 @@ class AddBoneGraftDialog(AddDialog):
     def __init__(self, parent=None, title="Add Bone Graft"):
         super().__init__(parent, title)
 
+    def get_data(self):
+        def get_val(widget):
+            if isinstance(widget, QComboBox):
+                return widget.currentText().strip()
+            else:
+                return widget.text().strip()
+            
+        brand=self.brand_input.currentText().strip()
+        type_=get_val(self.type_input)
+        particulate=get_val(self.particulate_input)
+        granule_size=get_val(self.granule_size_input)
+        amount=get_val(self.amount_input)
+        ref=self.ref_input.text().strip()
+        lot=self.lot_input.text().strip()
+        sn=self.sn_input.text().strip()
+        expiry=self.expiry_input.text().strip()
+        qty=self.qty_input.text().strip()
+
+        # Validate inputs, raising exceptions as needed
+        expiry_date, qty = self.validate_inputs(
+            {
+                "brand": brand,
+                "type_": type_,
+                "particulate": particulate,
+                "granule_size": granule_size,
+                "amount": amount,
+                "sn": sn,
+                "ref": ref,
+                "lot": lot,
+                "expiry": expiry,
+                "qty": qty
+            },
+            expiry,
+            qty
+        )
+        
+        return BoneGraft(
+            brand=brand,
+            type_=type_,
+            particulate=particulate,
+            granule_size=granule_size,
+            amount=amount,
+            sn=sn,
+            ref=ref,
+            lot=lot,
+            expiry=expiry_date.strftime("%Y-%m-%d"),
+            qty=qty
+        )
+    
     def _add_dialog_body_widgets(self):
         # Initialize dialog
         self.layout_.addRow("Brand", self.brand_input)
@@ -39,53 +88,6 @@ class AddBoneGraftDialog(AddDialog):
         self.layout_.addRow("Expiry (YYYY-MM-DD)", self.expiry_input)
         self.qty_input = QLineEdit()
         self.layout_.addRow("Qty", self.qty_input)
-
-    def get_data(self):
-        def get_val(widget):
-            if isinstance(widget, QComboBox):
-                return widget.currentText().strip()
-            else:
-                return widget.text().strip()
-            
-        brand=self.brand_input.currentText().strip()
-        type_=get_val(self.type_input)
-        particulate=get_val(self.particulate_input)
-        granule_size=get_val(self.granule_size_input)
-        amount=get_val(self.amount_input)
-        ref=self.ref_input.text().strip()
-        lot=self.lot_input.text().strip()
-        sn=self.sn_input.text().strip()
-        expiry=self.expiry_input.text().strip()
-        qty=self.qty_input.text().strip()
-
-        # Validate inputs, raising exceptions as needed
-        self._check_all_fields_filled({
-            "brand": brand,
-            "type_": type_,
-            "particulate": particulate,
-            "granule_size": granule_size,
-            "amount": amount,
-            "sn": sn,
-            "ref": ref,
-            "lot": lot,
-            "expiry": expiry,
-            "qty": qty
-        })
-        expiry_date = self._check_expiry_date(expiry)
-        qty = self._check_quantity(qty)
-
-        return BoneGraft(
-            brand=brand,
-            type_=type_,
-            particulate=particulate,
-            granule_size=granule_size,
-            amount=amount,
-            sn=sn,
-            ref=ref,
-            lot=lot,
-            expiry=expiry_date.strftime("%Y-%m-%d"),
-            qty=qty
-        )
 
 class EditBoneGraftDialog(EditDialog):
     def __init__(

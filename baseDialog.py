@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Tuple
 from PyQt6.QtWidgets import (
     QDialog, QDialogButtonBox, QComboBox, QFormLayout, QInputDialog, QVBoxLayout, QLabel, QLineEdit, QTableWidget, QTableWidgetItem, QHeaderView, QSpinBox, QMessageBox
 )
@@ -44,6 +45,47 @@ class AddDialog(QDialog):
         self.button_box.rejected.connect(self.reject)
         self.layout_.addWidget(self.button_box)
 
+    def get_data(self) -> Item:
+        """Gather data from inputs and return Item instance"""            
+        brand=self.brand_input.currentText().strip()
+        expiry=self.expiry_input.text().strip()
+        qty=self.qty_input.text().strip()
+        ref=self.ref_input.text().strip()
+        lot=self.lot_input.text().strip()
+
+        # Validate inputs, raising exceptions as needed
+        expiry_date, qty = self.validate_inputs(
+            {
+                "brand": brand,
+                "expiry": expiry,
+                "qty": qty,
+                "ref": ref,
+                "lot": lot
+            },
+            expiry,
+            qty
+        )
+
+        return Item(
+            brand=brand,
+            expiry=expiry_date.strftime("%Y-%m-%d"),
+            qty=qty,
+            ref=ref,
+            lot=lot
+        )
+
+    @staticmethod
+    def validate_inputs(
+        fields: dict[str, str],
+        expiry: str,
+        qty: str
+    ) -> Tuple[datetime, int]:
+        """Static method to validate inputs, raising exceptions as needed."""
+        _check_all_fields_filled(fields)
+        expiry_date = _check_expiry_date(expiry)
+        qty = _check_quantity(qty)
+        return expiry_date, qty
+
     def _add_dialog_body_widgets(self):
         # Initialize dialog, to be overridden by subclasses
         self.layout_.addRow("Brand", self.brand_input)
@@ -74,33 +116,6 @@ class AddDialog(QDialog):
                 # Revert to first brand if cancelled
                 brands_sorted = sorted(self._brand_list)
                 self.brand_input.setCurrentText(brands_sorted[0])
-
-    def get_data(self) -> Item:
-        """Gather data from inputs and return Item instance"""            
-        brand=self.brand_input.currentText().strip()
-        expiry=self.expiry_input.text().strip()
-        qty=self.qty_input.text().strip()
-        ref=self.ref_input.text().strip()
-        lot=self.lot_input.text().strip()
-
-        # Validate inputs, raising exceptions as needed
-        _check_all_fields_filled({
-            "brand": brand,
-            "expiry": expiry,
-            "qty": qty,
-            "ref": ref,
-            "lot": lot
-        })
-        expiry_date = _check_expiry_date(expiry)
-        qty = _check_quantity(qty)
-
-        return Item(
-            brand=brand,
-            expiry=expiry_date.strftime("%Y-%m-%d"),
-            qty=qty,
-            ref=ref,
-            lot=lot
-        )
 
 class EditDialog(QDialog):
     def __init__(
