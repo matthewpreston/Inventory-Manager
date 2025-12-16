@@ -304,7 +304,7 @@ class Inventory:
             self.update_table()
             QMessageBox.information(self.widget, "Success", f"{len(removals)} {self.item_name}s removed successfully.")
 
-    def save_data(self):
+    def save_data(self, showMessageBox=True):
         # Save items to CSV file
         try:
             with open(self.inventory_file, "w", newline="") as f:
@@ -321,7 +321,8 @@ class Inventory:
                             item.qty
                         ]
                     )
-            QMessageBox.information(self.widget, "Saved", f"{self.item_name.capitalize()}s saved to {self.inventory_file}.")
+            if showMessageBox:
+                QMessageBox.information(self.widget, "Saved", f"{self.item_name.capitalize()}s saved to {self.inventory_file}.")
         except Exception as e:
             QMessageBox.warning(self.widget, "Save Error", f"Failed to save {self.item_name}s: {e}")
 

@@ -36,6 +36,15 @@ class InventoryManager(QWidget):
             days_from_expiry=DAYS_FROM_EXPIRY
         )
 
+        # Overload save buttons
+        self.implant_inventory.save_btn.clicked.disconnect()
+        self.healing_abutment_inventory.save_btn.clicked.disconnect()
+        self.bone_graft_inventory.save_btn.clicked.disconnect()
+        self.implant_inventory.save_btn.clicked.connect(self.save_all_data)
+        self.healing_abutment_inventory.save_btn.clicked.connect(self.save_all_data)
+        self.bone_graft_inventory.save_btn.clicked.connect(self.save_all_data)
+        
+
         # Load data from files       
         self.load_data()
         
@@ -60,10 +69,7 @@ class InventoryManager(QWidget):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
         )
         if reply == QMessageBox.StandardButton.Yes:
-            # Save each product file separately
-            self.implant_inventory.save_data()
-            self.healing_abutment_inventory.save_data()
-            self.bone_graft_inventory.save_data()
+            self.save_all_data()
             event.accept()
         elif reply == QMessageBox.StandardButton.No:
             event.accept()
@@ -72,10 +78,9 @@ class InventoryManager(QWidget):
 
     def save_all_data(self):
         """Save all three product files."""
-        #self.save_implants_data()
-        self.implant_inventory.save_data()
-        self.healing_abutment_inventory.save_data()
-        self.bone_graft_inventory.save_data()
+        self.implant_inventory.save_data(showMessageBox=False)
+        self.healing_abutment_inventory.save_data(showMessageBox=False)
+        self.bone_graft_inventory.save_data(showMessageBox=False)
         QMessageBox.information(self, "Saved", "All inventories saved successfully.")
 
     def load_data(self):

@@ -64,62 +64,151 @@ class AddHealingAbutmentDialog(AddDialog):
         )
     
     def _add_dialog_body_widgets(self):
-        # Initialize dialog
         self._brand_list = ["Nobel", "Straumann"]
         self._refresh_brand_items()
-        # Set default and connect change handler so dependent widgets update when brand changes
         self.brand_input.setCurrentText("Nobel")
-        # Update dynamic widgets whenever the brand selection changes
-        self.brand_input.currentTextChanged.connect(self._set_dynamic_widgets)
-        self.layout_.addRow("Brand", self.brand_input)
-        self.type_label = QLabel("Type")
+        self.brand_input.currentTextChanged.connect(self._set_dynamic_type_widget)
         self.type_input = None
-        self.platform_label = QLabel("Platform")
         self.platform_input = None
-        self.width_label = QLabel("Width")
         self.width_input = None
-        self.height_label = QLabel("Height")
         self.height_input = None
-        self._set_dynamic_widgets() # Also adds to layout
+        
+        # Add widgets to layout
+        self.layout_.addRow("Brand", self.brand_input)
+        self._set_dynamic_type_widget() # Adds type, platform, width, height widgets
         self.layout_.addRow("REF", self.ref_input)
         self.layout_.addRow("LOT", self.lot_input)
         self.layout_.addRow("Expiry (YYYY-MM-DD)", self.expiry_input)
         self.layout_.addRow("Qty", self.qty_input)
 
-    def _set_dynamic_widgets(self):
-        # Remove existing widgets if present
+    def _set_dynamic_type_widget(self):
         self.type_input.deleteLater() if self.type_input else None
+        # Add new widgets based on selection
+        match self.brand_input.currentText():
+            case "Nobel":
+                self.type_input = QComboBox()
+                self.type_input.addItems([
+                    "Single-unit",
+                    "Multiple-unit"
+                ])
+                self.type_input.setCurrentText("Single-unit")
+                self.type_input.currentTextChanged.connect(self._set_dynamic_platform_widget)
+            case _:
+                self.type_input = QLineEdit()
+        # Remove any existing row at this position before inserting to avoid
+        # accumulating rows (which causes the dialog to grow each time)
+        if self.layout_.rowCount() > 1:
+            self.layout_.removeRow(1)
+        self.layout_.insertRow(1, "Type", self.type_input)
+        self._set_dynamic_platform_widget()
+    
+    def _set_dynamic_platform_widget(self):
         self.platform_input.deleteLater() if self.platform_input else None
-        self.width_input.deleteLater() if self.width_input else None
-        self.height_input.deleteLater() if self.height_input else None
-        # Add new widgets based on selected brand
-        brand = self.brand_input.currentText()
-        if brand == "Nobel":
-            # Type
-            self.type_input = QComboBox()
-            self.type_input.addItems([
-                "Single",
-                "Bridge"
-            ])
-            # Platform
-            self.platform_input = QComboBox()
-            self.platform_input.addItems(["3.0", "RP", "NP", "WP"])
-            # Width
-            self.width_input = QComboBox()
-            self.width_input.addItems(["3.2", "3.6", "3.8", "4.0", "5.0", "6.0"])
-            # Height
-            self.height_input = QComboBox()
-            self.height_input.addItems(["3.0", "5.0", "7.0"])
+        if isinstance(self.type_input, QComboBox):
+            match self.type_input.currentText():
+                case "Single-unit":
+                    self.platform_input = QComboBox()
+                    self.platform_input.addItems(["3.0", "NP", "RP", "WP"])
+                    self.platform_input.setCurrentText("3.0")
+                    self.platform_input.currentTextChanged.connect(self._set_dynamic_width_widget)
+                case "Multiple-unit":
+                    self.platform_input = QComboBox()
+                    self.platform_input.addItems(["NP", "RP", "WP"])
+                    self.platform_input.setCurrentText("NP")
+                    self.platform_input.currentTextChanged.connect(self._set_dynamic_width_widget)
+                case _:
+                    self.platform_input = QLineEdit()
         else:
-            self.type_input = QLineEdit()
             self.platform_input = QLineEdit()
+        # Ensure we don't duplicate the platform row
+        if self.layout_.rowCount() > 2:
+            self.layout_.removeRow(2)
+        self.layout_.insertRow(2, "Platform", self.platform_input)
+        self._set_dynamic_width_widget()
+    
+    def _set_dynamic_width_widget(self):
+        self.width_input.deleteLater() if self.width_input else None
+        # Add new widgets based on selection
+        if isinstance(self.platform_input, QComboBox):
+            match self.platform_input.currentText():
+                case "3.0":
+                    self.width_input = QComboBox()
+                    self.width_input.addItems(["3.2", "3.8"])
+                    self.width_input.setCurrentText("3.2")
+                    self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                case "NP":
+                    match self.type_input.currentText():
+                        case "Single-unit":
+                            self.width_input = QComboBox()
+                            self.width_input.addItems(["3.6", "5"])
+                            self.width_input.setCurrentText("3.6")
+                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                        case "Multiple-unit":
+                            self.width_input = QComboBox()
+                            self.width_input.addItems(["4"])
+                            self.width_input.setCurrentText("4")
+                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                        case _:
+                            self.width_input = QLineEdit()
+                case "RP":
+                    match self.type_input.currentText():
+                        case "Single-unit":
+                            self.width_input = QComboBox()
+                            self.width_input.addItems(["3.6", "5", "6"])
+                            self.width_input.setCurrentText("3.6")
+                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                        case "Multiple-unit":
+                            self.width_input = QComboBox()
+                            self.width_input.addItems(["5"])
+                            self.width_input.setCurrentText("5")
+                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                        case _:
+                            self.width_input = QLineEdit()
+                case "WP":
+                    match self.type_input.currentText():
+                        case "Single-unit":
+                            self.width_input = QComboBox()
+                            self.width_input.addItems(["5", "6"])
+                            self.width_input.setCurrentText("5")
+                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                        case "Multiple-unit":
+                            self.width_input = QComboBox()
+                            self.width_input.addItems(["6"])
+                            self.width_input.setCurrentText("6")
+                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                        case _:
+                            self.width_input = QLineEdit()
+                case _:
+                    self.width_input = QLineEdit()
+        else:
             self.width_input = QLineEdit()
+        # Ensure single width row only
+        if self.layout_.rowCount() > 3:
+            self.layout_.removeRow(3)
+        self.layout_.insertRow(3, "Width", self.width_input)
+        self._set_dynamic_height_widget()
+
+    def _set_dynamic_height_widget(self):
+        self.height_input.deleteLater() if self.height_input else None
+        # Add new widgets based on selection
+        if isinstance(self.platform_input, QComboBox):
+            match self.platform_input.currentText():
+                case "3.0" | "NP" | "RP":
+                    self.height_input = QComboBox()
+                    self.height_input.addItems(["3", "5", "7"])
+                    self.height_input.setCurrentText("3")
+                case "WP":
+                    self.height_input = QComboBox()
+                    self.height_input.addItems(["3", "5"])
+                    self.height_input.setCurrentText("3")
+                case _:
+                    self.height_input = QLineEdit()
+        else:
             self.height_input = QLineEdit()
-        # Insert in order
-        self.layout_.insertRow(1, self.type_label, self.type_input)
-        self.layout_.insertRow(2, self.platform_label, self.platform_input)
-        self.layout_.insertRow(3, self.width_label, self.width_input)
-        self.layout_.insertRow(4, self.height_label, self.height_input)
+        # Ensure we don't add multiple height rows
+        if self.layout_.rowCount() > 4:
+            self.layout_.removeRow(4)
+        self.layout_.insertRow(4, "Height", self.height_input)
 
 class EditHealingAbutmentDialog(EditDialog):
     def __init__(
