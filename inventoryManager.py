@@ -9,16 +9,32 @@ from boneGrafts import BoneGraftInventory
 IMPLANTS_FILE = "Inventory/implants.csv"
 HEALING_ABUTMENTS_FILE = "Inventory/healing_abutments.csv"
 BONE_GRAFTS_FILE = "Inventory/bone_grafts.csv"
+IMPLANTS_LOW_QUANTITY = 1
+HEALING_ABUTMENTS_LOW_QUANTITY = 2
+BONE_GRAFTS_LOW_QUANTITY = 2
+DAYS_FROM_EXPIRY = 180
 
 class InventoryManager(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Inventory Manager")
-        self.setGeometry(200, 200, 1200, 600)
+        self.setGeometry(200, 200, 1600, 800)
 
-        self.implant_inventory = ImplantInventory(IMPLANTS_FILE)
-        self.healing_abutment_inventory = HealingAbutmentInventory(HEALING_ABUTMENTS_FILE)
-        self.bone_graft_inventory = BoneGraftInventory(BONE_GRAFTS_FILE)
+        self.implant_inventory = ImplantInventory(
+            inventory_file=IMPLANTS_FILE,
+            low_quantity=IMPLANTS_LOW_QUANTITY,
+            days_from_expiry=DAYS_FROM_EXPIRY
+        )
+        self.healing_abutment_inventory = HealingAbutmentInventory(
+            inventory_file=HEALING_ABUTMENTS_FILE,
+            low_quantity=HEALING_ABUTMENTS_LOW_QUANTITY,
+            days_from_expiry=DAYS_FROM_EXPIRY
+        )
+        self.bone_graft_inventory = BoneGraftInventory(
+            inventory_file=BONE_GRAFTS_FILE,
+            low_quantity=BONE_GRAFTS_LOW_QUANTITY,
+            days_from_expiry=DAYS_FROM_EXPIRY
+        )
 
         # Load data from files       
         self.load_data()

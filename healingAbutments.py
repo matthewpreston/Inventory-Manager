@@ -168,6 +168,8 @@ class HealingAbutmentInventory(Inventory):
     def __init__(
             self,
             inventory_file: str,
+            low_quantity: int=2,
+            days_from_expiry: int=180
         ):
         super().__init__(
             inventory_file=inventory_file,
@@ -181,5 +183,7 @@ class HealingAbutmentInventory(Inventory):
             attributes=[
                 "brand", "type_", "platform", "width", "height"
             ],
-            item_name="healing abutment"
+            item_name="healing abutment",
+            low_quantity=low_quantity,
+            days_from_expiry=days_from_expiry
         )

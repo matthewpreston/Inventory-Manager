@@ -19,7 +19,9 @@ class Inventory:
             RemoveDialogClass: RemoveDialog,
             header_labels: list[str],
             attributes: list[str],
-            item_name: str="Item"
+            item_name: str="Item",
+            low_quantity: int=2,
+            days_from_expiry: int=180
         ):
         self.inventory_file = inventory_file
         self.ItemClass = ItemClass
@@ -31,6 +33,8 @@ class Inventory:
         if len(header_labels) != len(attributes):
             raise ValueError("header_labels and attribute_labels must have the same length.")
         self.item_name = item_name.lower()
+        self.low_quantity = low_quantity
+        self.days_from_expiry = days_from_expiry
 
         self.inventory: list[Item] = []
         self.selected_row = None
@@ -340,9 +344,9 @@ class Inventory:
             except Exception:
                 expiry_date = None
             status = ""
-            if item["total_qty"] <= 2:
+            if item["total_qty"] <= self.low_quantity:
                 status = "⚠ Low Stock"
-            if expiry_date and (expiry_date - now).days < 180:
+            if expiry_date and (expiry_date - now).days < self.days_from_expiry:
                 if status:
                     status += ", Expiring Soon"
                 else:

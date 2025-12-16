@@ -136,7 +136,9 @@ class RemoveBoneGraftDialog(RemoveDialog):
 class BoneGraftInventory(Inventory):
     def __init__(
             self,
-            inventory_file: str
+            inventory_file: str,
+            low_quantity: int=2,
+            days_from_expiry: int=180
             ):
         super().__init__(
             inventory_file=inventory_file,
@@ -150,5 +152,7 @@ class BoneGraftInventory(Inventory):
             attributes=[
                 "brand", "type_", "particulate", "granule_size", "amount", "sn"
             ],
-            item_name="bone graft"
+            item_name="bone graft",
+            low_quantity=low_quantity,
+            days_from_expiry=days_from_expiry
         )
