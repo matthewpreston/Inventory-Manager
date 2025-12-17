@@ -250,7 +250,9 @@ class RemoveHealingAbutmentDialog(RemoveDialog):
             platform: str,
             width: str,
             height: str,
-            parent=None
+            parent=None,
+            *args,
+            **kwargs
         ):
         super().__init__(
             inventory=inventory,

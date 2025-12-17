@@ -279,7 +279,9 @@ class RemoveBoneGraftDialog(RemoveDialog):
             particulate: str,
             granule_size: str,
             amount: str,
-            parent=None
+            parent=None,
+            *args,
+            **kwargs
         ):
         super().__init__(
             inventory=inventory,

@@ -235,7 +235,9 @@ class RemoveTemporaryAbutmentDialog(RemoveDialog):
             platform: str,
             collar_height: str,
             height: str,
-            parent=None
+            parent=None,
+            *args,
+            **kwargs
         ):
         super().__init__(
             inventory=inventory,

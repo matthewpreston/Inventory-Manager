@@ -244,7 +244,9 @@ class RemoveImplantDialog(RemoveDialog):
             platform: str,
             width: str,
             length: str,
-            parent=None
+            parent=None,
+            *args,
+            **kwargs
         ):
         super().__init__(
             inventory=inventory,
