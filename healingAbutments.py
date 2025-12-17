@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (
-    QComboBox, QLabel, QLineEdit
+    QComboBox, QLineEdit
 )
 from baseDialog import AddDialog, EditDialog, RemoveDialog
 from baseInventory import Inventory
@@ -137,47 +137,56 @@ class AddHealingAbutmentDialog(AddDialog):
                     self.width_input.setCurrentText("3.2")
                     self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
                 case "NP":
-                    match self.type_input.currentText():
-                        case "Single-unit":
-                            self.width_input = QComboBox()
-                            self.width_input.addItems(["3.6", "5"])
-                            self.width_input.setCurrentText("3.6")
-                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
-                        case "Multiple-unit":
-                            self.width_input = QComboBox()
-                            self.width_input.addItems(["4"])
-                            self.width_input.setCurrentText("4")
-                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
-                        case _:
-                            self.width_input = QLineEdit()
+                    if isinstance(self.type_input, QComboBox):
+                        match self.type_input.currentText():
+                            case "Single-unit":
+                                self.width_input = QComboBox()
+                                self.width_input.addItems(["3.6", "5"])
+                                self.width_input.setCurrentText("3.6")
+                                self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                            case "Multiple-unit":
+                                self.width_input = QComboBox()
+                                self.width_input.addItems(["4"])
+                                self.width_input.setCurrentText("4")
+                                self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                            case _:
+                                self.width_input = QLineEdit()
+                    else:
+                        self.width_input = QLineEdit()
                 case "RP":
-                    match self.type_input.currentText():
-                        case "Single-unit":
-                            self.width_input = QComboBox()
-                            self.width_input.addItems(["3.6", "5", "6"])
-                            self.width_input.setCurrentText("3.6")
-                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
-                        case "Multiple-unit":
-                            self.width_input = QComboBox()
-                            self.width_input.addItems(["5"])
-                            self.width_input.setCurrentText("5")
-                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
-                        case _:
-                            self.width_input = QLineEdit()
+                    if isinstance(self.type_input, QComboBox):
+                        match self.type_input.currentText():
+                            case "Single-unit":
+                                self.width_input = QComboBox()
+                                self.width_input.addItems(["3.6", "5", "6"])
+                                self.width_input.setCurrentText("3.6")
+                                self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                            case "Multiple-unit":
+                                self.width_input = QComboBox()
+                                self.width_input.addItems(["5"])
+                                self.width_input.setCurrentText("5")
+                                self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                            case _:
+                                self.width_input = QLineEdit()
+                    else:
+                        self.width_input = QLineEdit()
                 case "WP":
-                    match self.type_input.currentText():
-                        case "Single-unit":
-                            self.width_input = QComboBox()
-                            self.width_input.addItems(["5", "6"])
-                            self.width_input.setCurrentText("5")
-                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
-                        case "Multiple-unit":
-                            self.width_input = QComboBox()
-                            self.width_input.addItems(["6"])
-                            self.width_input.setCurrentText("6")
-                            self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
-                        case _:
-                            self.width_input = QLineEdit()
+                    if isinstance(self.type_input, QComboBox):
+                        match self.type_input.currentText():
+                            case "Single-unit":
+                                self.width_input = QComboBox()
+                                self.width_input.addItems(["5", "6"])
+                                self.width_input.setCurrentText("5")
+                                self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                            case "Multiple-unit":
+                                self.width_input = QComboBox()
+                                self.width_input.addItems(["6"])
+                                self.width_input.setCurrentText("6")
+                                self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
+                            case _:
+                                self.width_input = QLineEdit()
+                    else:
+                        self.width_input = QLineEdit()
                 case _:
                     self.width_input = QLineEdit()
         else:

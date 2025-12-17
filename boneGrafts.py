@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (
-    QComboBox, QLabel, QLineEdit
+    QComboBox, QLineEdit
 )
 from baseDialog import AddDialog, EditDialog, RemoveDialog
 from baseInventory import Inventory
