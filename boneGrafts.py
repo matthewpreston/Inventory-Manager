@@ -99,6 +99,7 @@ class AddBoneGraftDialog(AddDialog):
                 ])
                 self.type_input.setCurrentText("Allograft")
                 self.type_input.currentTextChanged.connect(self._set_dynamic_particulate_widget)
+                self.type_input.currentTextChanged.connect(self._set_dynamic_sn_widget)
             case _:
                 self.type_input = QLineEdit()
         # Remove any existing row at this position before inserting to avoid
@@ -107,6 +108,7 @@ class AddBoneGraftDialog(AddDialog):
             self.layout_.removeRow(1)
         self.layout_.insertRow(1, "Type", self.type_input)
         self._set_dynamic_particulate_widget()
+        self._set_dynamic_sn_widget
     
     def _set_dynamic_particulate_widget(self):
         self.particulate_input.deleteLater() if self.particulate_input else None
@@ -246,6 +248,19 @@ class AddBoneGraftDialog(AddDialog):
         if self.layout_.rowCount() > 4:
             self.layout_.removeRow(4)
         self.layout_.insertRow(4, "Height", self.amount_input)
+    
+    def _set_dynamic_sn_widget(self):
+        if isinstance(self.type_input, QComboBox):
+            match self.type_input.currentText():
+                case "Allograft":
+                    self.sn_input.setText("")
+                    self.sn_input.setDisabled(False)
+                case "Xenograft" | "Synthetic":
+                    self.sn_input.setText("N/A")
+                    self.sn_input.setDisabled(True)
+                case _:
+                    self.sn_input.setText("")
+                    self.sn_input.setDisabled(False)
 
 class EditBoneGraftDialog(EditDialog):
     def __init__(
@@ -307,7 +322,7 @@ class BoneGraftInventory(Inventory):
             EditDialogClass=EditBoneGraftDialog,
             RemoveDialogClass=RemoveBoneGraftDialog,
             header_labels=[
-                "Brand", "Type", "Particulate", "Granule Size", "Amount", "SN"
+                "Brand", "Type", "Particulate", "Granule Size", "Amount"
             ],
             attributes=[
                 "brand", "type_", "particulate", "granule_size", "amount", "sn"

@@ -142,6 +142,7 @@ class AddTemporaryAbutmentDialog(AddDialog):
                     self.collar_height_input = QComboBox()
                     self.collar_height_input.addItems(["1.5"])
                     self.collar_height_input.setCurrentText("1.5")
+                    self.collar_height_input.setDisabled(True)
                     self.collar_height_input.currentTextChanged.connect(self._set_dynamic_height_widget)
                 case "NP" | "RP":
                     if isinstance(self.engagement_input, QComboBox):
@@ -155,6 +156,7 @@ class AddTemporaryAbutmentDialog(AddDialog):
                                 self.collar_height_input = QComboBox()
                                 self.collar_height_input.addItems(["1.5"])
                                 self.collar_height_input.setCurrentText("1.5")
+                                self.collar_height_input.setDisabled(True)
                                 self.collar_height_input.currentTextChanged.connect(self._set_dynamic_height_widget)
                             case _:
                                 self.collar_height_input = QLineEdit()
@@ -189,14 +191,17 @@ class AddTemporaryAbutmentDialog(AddDialog):
                 self.height_input = QComboBox()
                 self.height_input.addItems(["4 mm"])
                 self.height_input.setCurrentText("4 mm")
+                self.height_input.setDisabled(True)
             elif self.engagement_input == "Engaging" and self.platform_input == "3.0":
                 self.height_input = QComboBox()
                 self.height_input.addItems(["9 mm"])
                 self.height_input.setCurrentText("9 mm")
+                self.height_input.setDisabled(True)
             else:
                 self.height_input = QComboBox()
                 self.height_input.addItems(["10 mm"])
                 self.height_input.setCurrentText("10 mm")
+                self.height_input.setDisabled(True)
         else:
             self.height_input = QLineEdit()
         # Ensure we don't add multiple height rows

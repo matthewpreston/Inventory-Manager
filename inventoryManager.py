@@ -5,19 +5,23 @@ from PyQt6.QtWidgets import (
 from baseInventory import Inventory
 from implants import ImplantInventory
 from healingAbutments import HealingAbutmentInventory
+from coverScrews import CoverScrewInventory
 from temporaryAbutments import TemporaryAbutmentInventory
 from boneGrafts import BoneGraftInventory
 from membranes import MembraneInventory
 
 IMPLANTS_FILE = "Inventory/implants.csv"
 HEALING_ABUTMENTS_FILE = "Inventory/healing_abutments.csv"
+COVER_SCREWS_FILE = "Inventory/cover_screws.csv"
 TEMPORARY_ABUTMENTS_FILE = "Inventory/temporary_abutments.csv"
 BONE_GRAFTS_FILE = "Inventory/bone_grafts.csv"
 MEMBRANES_FILE = "Inventory/membranes.csv"
 IMPLANTS_LOW_QUANTITY = 1
 HEALING_ABUTMENTS_LOW_QUANTITY = 2
+COVER_SCREWS_LOW_QUANTITY = 2
 TEMPORARY_ABUTMENTS_LOW_QUANTITY = 2
 BONE_GRAFTS_LOW_QUANTITY = 2
+MEMBRANES_LOW_QUANTITY = 2
 DAYS_FROM_EXPIRY = 180
 
 class InventoryManager(QWidget):
@@ -37,6 +41,11 @@ class InventoryManager(QWidget):
                 low_quantity=HEALING_ABUTMENTS_LOW_QUANTITY,
                 days_from_expiry=DAYS_FROM_EXPIRY
             ),
+            "Cover Screws": CoverScrewInventory(
+                inventory_file=COVER_SCREWS_FILE,
+                low_quantity=COVER_SCREWS_LOW_QUANTITY,
+                days_from_expiry=DAYS_FROM_EXPIRY
+            ),
             "Temporary Abutments": TemporaryAbutmentInventory(
                 inventory_file=TEMPORARY_ABUTMENTS_FILE,
                 low_quantity=TEMPORARY_ABUTMENTS_LOW_QUANTITY,
@@ -48,8 +57,8 @@ class InventoryManager(QWidget):
                 days_from_expiry=DAYS_FROM_EXPIRY
             ),
             "Membranes": MembraneInventory(
-                inventory_file=BONE_GRAFTS_FILE,
-                low_quantity=BONE_GRAFTS_LOW_QUANTITY,
+                inventory_file=MEMBRANES_FILE,
+                low_quantity=MEMBRANES_LOW_QUANTITY,
                 days_from_expiry=DAYS_FROM_EXPIRY
             )
         }

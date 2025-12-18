@@ -30,8 +30,8 @@ class Inventory:
         self.RemoveDialogClass = RemoveDialogClass
         self.header_labels = header_labels
         self.attributes = attributes
-        if len(header_labels) != len(attributes):
-            raise ValueError("header_labels and attribute_labels must have the same length.")
+        #if len(header_labels) != len(attributes):
+        #    raise ValueError("header_labels and attribute_labels must have the same length.")
         self.item_name = item_name.lower()
         self.low_quantity = low_quantity
         self.days_from_expiry = days_from_expiry
@@ -75,8 +75,9 @@ class Inventory:
         grouped = {}
         for item in self.inventory:
             key = tuple()
-            for attr in self.attributes:
-                key += (getattr(item, attr),)
+            # TODO be weary of buggy behaviour here
+            for i in range(len(self.header_labels)):
+                key += (getattr(item, self.attributes[i]),)
 
             # Create unique groups based on attributes
             if key not in grouped:
@@ -126,7 +127,22 @@ class Inventory:
             except (AllFieldsRequiredError, InvalidDateError, InvalidQuantityError) as e:
                 QMessageBox.warning(self.widget, "Error", str(e))
                 return
-            self.inventory.append(item)
+            # If item already exists in inventory, update the qty on that, else add it
+            matching_item_index = None
+            for i, inventory_item in enumerate(self.inventory):
+                if all(
+                            getattr(item, attr) == getattr(inventory_item, attr)
+                            for attr in self.attributes
+                        ) and \
+                        item.ref == inventory_item.ref and \
+                        item.lot == inventory_item.lot and \
+                        item.expiry == inventory_item.expiry:
+                    matching_item_index = i
+                    break
+            if matching_item_index is not None:
+                self.inventory[matching_item_index].qty += item.qty
+            else:
+                self.inventory.append(item)
             self.update_table()
 
     def edit_item(self):
@@ -139,11 +155,12 @@ class Inventory:
         selected_item = sorted_condensed_inventory[self.selected_row]
 
         # Get all matching items from inventory
+        # TODO - possibly buggy behaviour
         matching_items = [
             item for item in self.inventory
             if all(
-                getattr(item, attr) == selected_item[attr]
-                for attr in self.attributes
+                getattr(item, self.attributes[i]) == selected_item[self.attributes[i]]
+                for i in range(len(self.header_labels))
             )
         ]
 
@@ -204,25 +221,25 @@ class Inventory:
                         continue
                     # Skip header row if present
                     if (
-                            row[0].strip().lower() == self.header_labels[0].strip().lower() or
+                            row[0].strip().lower() == self.attributes[0].strip().lower() or
                             (
-                                len(row) > len(self.header_labels) and
-                                row[len(self.header_labels)].strip().lower() == "expiry"
+                                len(row) > len(self.attributes) and
+                                row[len(self.attributes)].strip().lower() == "expiry"
                             )
                     ):
                         continue
                     # Skip rows with incorrect number of columns
-                    if len(row) != len(self.header_labels) + 4:
+                    if len(row) != len(self.attributes) + 4:
                         continue
                     args = {}
                     for i, a in enumerate(self.attributes):
                         args[a] = row[i]
                     self.inventory.append(self.ItemClass(
                         **args,
-                        ref=row[len(self.header_labels)],
-                        lot=row[len(self.header_labels) + 1],
-                        expiry=row[len(self.header_labels) + 2],
-                        qty=int(row[len(self.header_labels) + 3])
+                        ref=row[len(self.attributes)],
+                        lot=row[len(self.attributes) + 1],
+                        expiry=row[len(self.attributes) + 2],
+                        qty=int(row[len(self.attributes) + 3])
                     ))
         except FileNotFoundError:
             QMessageBox.information(self.widget, "Info", f"No existing {self.item_name} inventory file found. A new one will be created upon saving.")
@@ -255,11 +272,12 @@ class Inventory:
         selected_item = sorted_condensed_inventory[self.selected_row]
 
         # Get all matching items from inventory
+        # TODO - possibly buggy behaviour
         matching_items = [
             item for item in self.inventory
             if all(
-                getattr(item, attr) == selected_item[attr]
-                for attr in self.attributes
+                getattr(item, self.attributes[i]) == selected_item[self.attributes[i]]
+                for i in range(len(self.header_labels))
             )
         ]
 
@@ -310,7 +328,7 @@ class Inventory:
             with open(self.inventory_file, "w", newline="") as f:
                 writer = csv.writer(f)
                 # Write header
-                writer.writerow(self.header_labels + ["REF", "LOT", "Expiry", "Qty"])
+                writer.writerow(self.attributes + ["REF", "LOT", "Expiry", "Qty"])
                 for item in self.inventory:
                     writer.writerow(
                         [getattr(item, attr) for attr in self.attributes] +
@@ -334,11 +352,14 @@ class Inventory:
         for item in sorted_condensed_inventory:
             row = self.table.rowCount()
             self.table.insertRow(row)
-            for attr in self.attributes:
-                self.table.setItem(row, self.attributes.index(attr), QTableWidgetItem(str(item[attr])))
-            self.table.setItem(row, len(self.attributes), QTableWidgetItem(str(item["total_qty"])))
-            self.table.setItem(row, len(self.attributes) + 1, QTableWidgetItem(item["most_recent_expiry"]))
-            self.table.setItem(row, len(self.attributes) + 2, QTableWidgetItem(str(item["most_recent_expiry_qty"])))
+            # TODO - need a user defined mapping between header_labels and attributes, else can be buggy when
+            # they don't line up
+            for i in range(len(self.header_labels)):
+                attr = self.attributes[i]
+                self.table.setItem(row, i, QTableWidgetItem(str(item[attr])))
+            self.table.setItem(row, len(self.header_labels), QTableWidgetItem(str(item["total_qty"])))
+            self.table.setItem(row, len(self.header_labels) + 1, QTableWidgetItem(item["most_recent_expiry"]))
+            self.table.setItem(row, len(self.header_labels) + 2, QTableWidgetItem(str(item["most_recent_expiry_qty"])))
 
             try:
                 expiry_date = datetime.strptime(item["most_recent_expiry"], "%Y-%m-%d")
@@ -352,4 +373,4 @@ class Inventory:
                     status += ", Expiring Soon"
                 else:
                     status = "⚠ Expiring Soon"
-            self.table.setItem(row, len(self.attributes) + 3, QTableWidgetItem(status))
+            self.table.setItem(row, len(self.header_labels) + 3, QTableWidgetItem(status))

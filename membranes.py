@@ -455,7 +455,7 @@ class MembraneInventory(Inventory):
             EditDialogClass=EditMembraneDialog,
             RemoveDialogClass=RemoveMembraneDialog,
             header_labels=[
-                "Brand", "Biologic Type", "Membrane Type", "Shape", "Size", "Thickness", "SN"
+                "Brand", "Biologic Type", "Membrane Type", "Shape", "Size", "Thickness"
             ],
             attributes=[
                 "brand", "biologic_type", "membrane_type", "shape", "size", "thickness", "sn"

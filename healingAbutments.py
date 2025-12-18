@@ -175,7 +175,7 @@ class AddHealingAbutmentDialog(AddDialog):
                         match self.type_input.currentText():
                             case "Single-unit":
                                 self.width_input = QComboBox()
-                                self.width_input.addItems(["5", "6"])
+                                self.width_input.addItems(["5", "6", "6.5"])
                                 self.width_input.setCurrentText("5")
                                 self.width_input.currentTextChanged.connect(self._set_dynamic_height_widget)
                             case "Multiple-unit":
