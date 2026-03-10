@@ -1,12 +1,10 @@
 brand,type_,particulate,granule_size,amount,sn,REF,LOT,Expiry,Qty
 creos,Allograft,Demineralized cortical,0.125-0.850 mm,0.25 cc,231009103,N4310,45-8314,2029-11-10,1
-creos,Allograft,Corticocancellous,0.25-1.00 mm,0.5 cc,22B688576,N4520,46-6119,2029-12-24,1
 creos,Allograft,Corticocancellous,0.25-1.00 mm,0.5 cc,22B688396,N4520,46-6119,2029-12-24,1
 creos,Allograft,Corticocancellous,0.25-1.00 mm,0.5 cc,232495137,N4520,46-5941,2029-12-28,1
-creos,Allograft,Corticocancellous,0.25-1.00 mm,0.5 cc,232495172,N4520,46-5941,2029-12-28,1
-creos,Allograft,Corticocancellous,0.25-1.00 mm,0.5 cc,232495078,N4520,46-5941,2029-12-28,1
 creos,Allograft,Corticocancellous,0.25-1.00 mm,0.5 cc,232495157,N4520,46-5941,2029-12-28,1
 creos,Allograft,Corticocancellous,0.25-1.00 mm,0.5 cc,232495164,N4520,46-5941,2029-12-28,1
 creos,Allograft,Corticocancellous,0.25-1.00 mm,0.5 cc,232495175,N4520,46-5941,2029-12-28,1
 creos,Allograft,Corticocancellous,0.25-1.00 mm,0.5 cc,232495163,N4520,46-5941,2029-12-28,1
-creos,Allograft,Corticocancellous,0.25-1.00 mm,0.5 cc,232495173,N4520,46-5941,2029-12-28,1
+creos,Xenograft,N/A,0.2-1.0 mm,0.25 g,N/A,N1110-B,B241601B,2027-11-21,7
+creos,Xenograft,N/A,0.2-1.0 mm,0.5 g,N/A,N1120,B231664V,2027-01-22,1

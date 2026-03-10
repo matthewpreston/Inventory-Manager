@@ -13,6 +13,24 @@ class TemporaryAbutment(Item):
         self.collar_height = collar_height
         self.height = height
 
+    @classmethod
+    def getAttributeFromHeader(cls, header):
+        return super().getAttributeFromHeader(header) or {
+            "Engagement": cls.engagement,
+            "Platform": cls.platform,
+            "Collar Height": cls.collar_height,
+            "Height": cls.height
+        }.get(header, None)
+
+    @classmethod
+    def getAttributeNameFromHeader(cls, header):
+        return super().getAttributeNameFromHeader(header) or {
+            "Engagement": "engagement",
+            "Platform": "platform",
+            "Collar Height": "collar_height",
+            "Height": "height"
+        }.get(header, None)
+
 class AddTemporaryAbutmentDialog(AddDialog):
     def __init__(self, parent=None, title="Add Temporary Abutment"):
         super().__init__(parent, title)

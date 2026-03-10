@@ -12,6 +12,24 @@ class HealingAbutment(Item):
         self.platform = platform
         self.width = width
         self.height = height
+    
+    @classmethod
+    def getAttributeFromHeader(cls, header):
+        return super().getAttributeFromHeader(header) or {
+            "Type": cls.type_,
+            "Platform": cls.platform,
+            "Width": cls.width,
+            "Height": cls.height
+        }.get(header, None)
+    
+    @classmethod
+    def getAttributeNameFromHeader(cls, header):
+        return super().getAttributeNameFromHeader(header) or {
+            "Type": "type_",
+            "Platform": "platform",
+            "Width": "width",
+            "Height": "height"
+        }.get(header, None)
 
 class AddHealingAbutmentDialog(AddDialog):
     def __init__(self, parent=None, title="Add Healing Abutment"):

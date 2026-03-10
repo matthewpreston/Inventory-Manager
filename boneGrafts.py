@@ -14,6 +14,26 @@ class BoneGraft(Item):
         self.amount = amount
         self.sn = sn
 
+    @classmethod
+    def getAttributeFromHeader(cls, header):
+        return super().getAttributeFromHeader(header) or {
+            "Type": cls.type_,
+            "Particulate": cls.particulate,
+            "Granule Size": cls.granule_size,
+            "Amount": cls.amount,
+            "SN": cls.sn
+        }.get(header, None)
+    
+    @classmethod
+    def getAttributeNameFromHeader(cls, header):
+        return super().getAttributeNameFromHeader(header) or {
+            "Type": "type_",
+            "Particulate": "particulate",
+            "Granule Size": "granule_size",
+            "Amount": "amount",
+            "SN": "sn"
+        }.get(header, None)
+
 class AddBoneGraftDialog(AddDialog):
     def __init__(self, parent=None, title="Add Bone Graft"):
         super().__init__(parent, title)

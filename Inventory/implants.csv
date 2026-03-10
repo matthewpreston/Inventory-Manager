@@ -6,7 +6,6 @@ Nobel,NobelParallel TiUltra,RP,4.3,10.0,300304,12249993,2029-08-03,2
 Nobel,NobelParallel TiUltra,RP,5.0,8.5,300310,12279603,2030-10-28,7
 Nobel,NobelParallel TiUltra,RP,5.0,10.0,300311,12279840,2030-10-29,6
 Nobel,NobelParallel TiUltra,RP,5.0,10.0,300311,12259443,2029-12-22,2
-Nobel,NobelParallel TiUltra,WP,5.5,8.5,300317,12276134,2030-09-16,1
 Nobel,NobelParallel TiUltra,WP,5.5,10.0,300318,12262540,2030-01-31,1
 Nobel,NobelParallel TiUltra,WP,5.5,10.0,300318,12277520,2030-10-02,2
 Nobel,NobelActive TiUltra,NP,3.5,10.0,300245,12275442,2030-09-08,2
@@ -28,4 +27,6 @@ Nobel,NobelActive TiUltra,RP,5.0,8.5,300256,12237461,2029-01-13,1
 Nobel,NobelActive TiUltra,RP,5.0,8.5,300256,12263286,2030-02-09,1
 Nobel,NobelActive TiUltra,RP,5.0,8.5,300256,12267682,2030-04-06,4
 Nobel,NobelActive TiUltra,RP,5.0,10.0,300257,12269818,2030-06-04,6
-Nobel,NobelActive TiUltra,RP,5.0,10.0,300257,12279591,2030-10-28,13
+Nobel,NobelActive TiUltra,RP,5.0,10.0,300257,12279591,2030-10-28,12
+Nobel,NobelParallel TiUltra,RP,5.0,8.5,300310,12281101,2030-11-13,1
+Nobel,NobelParallel TiUnite,RP,5.0,8.5,37978,12238524,2029-01-27,1

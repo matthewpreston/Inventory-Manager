@@ -9,6 +9,14 @@ class CoverScrew(Item):
     def __init__(self, brand, platform, ref, lot, expiry, qty):
         super().__init__(brand, ref, lot, expiry, qty)
         self.platform = platform
+    
+    @classmethod
+    def getAttributeFromHeader(cls, header):
+        return super().getAttributeFromHeader(header) if header != "Platform" else cls.platform
+
+    @classmethod
+    def getAttributeNameFromHeader(cls, header):
+        return super().getAttributeNameFromHeader(header) if header != "Platform" else "platform"
 
 class AddCoverScrewDialog(AddDialog):
     def __init__(self, parent=None, title="Add Cover Screw"):

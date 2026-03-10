@@ -14,6 +14,28 @@ class Membrane(Item):
         self.size = size
         self.thickness = thickness
         self.sn = sn
+    
+    @classmethod
+    def getAttributeFromHeader(cls, header: str):
+        return super().getAttributeFromHeader(header) or {
+            "Biologic Type": cls.biologic_type,
+            "Membrane Type": cls.membrane_type,
+            "Shape": cls.shape,
+            "Size": cls.size,
+            "Thickness": cls.thickness,
+            "SN": cls.sn
+        }.get(header, None)
+
+    @classmethod
+    def getAttributeNameFromHeader(cls, header):
+        return super().getAttributeNameFromHeader(header) or {
+            "Biologic Type": "biologic_type",
+            "Membrane Type": "membrane_type",
+            "Shape": "shape",
+            "Size": "size",
+            "Thickness": "thickness",
+            "SN": "sn"
+        }.get(header, None)
 
 class AddMembraneDialog(AddDialog):
     def __init__(self, parent=None, title="Add Membrane"):

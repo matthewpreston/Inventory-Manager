@@ -75,9 +75,8 @@ class Inventory:
         grouped = {}
         for item in self.inventory:
             key = tuple()
-            # TODO be weary of buggy behaviour here
-            for i in range(len(self.header_labels)):
-                key += (getattr(item, self.attributes[i]),)
+            for header in self.header_labels:
+                key += (getattr(item, self.ItemClass.getAttributeNameFromHeader(header)),)
 
             # Create unique groups based on attributes
             if key not in grouped:
@@ -155,12 +154,11 @@ class Inventory:
         selected_item = sorted_condensed_inventory[self.selected_row]
 
         # Get all matching items from inventory
-        # TODO - possibly buggy behaviour
         matching_items = [
             item for item in self.inventory
             if all(
-                getattr(item, self.attributes[i]) == selected_item[self.attributes[i]]
-                for i in range(len(self.header_labels))
+                getattr(item, self.ItemClass.getAttributeNameFromHeader(header)) == selected_item[self.ItemClass.getAttributeNameFromHeader(header)]
+                for header in self.header_labels
             )
         ]
 
@@ -272,12 +270,11 @@ class Inventory:
         selected_item = sorted_condensed_inventory[self.selected_row]
 
         # Get all matching items from inventory
-        # TODO - possibly buggy behaviour
         matching_items = [
             item for item in self.inventory
             if all(
-                getattr(item, self.attributes[i]) == selected_item[self.attributes[i]]
-                for i in range(len(self.header_labels))
+                getattr(item, self.ItemClass.getAttributeNameFromHeader(header)) == selected_item[self.ItemClass.getAttributeNameFromHeader(header)]
+                for header in self.header_labels
             )
         ]
 
@@ -352,10 +349,8 @@ class Inventory:
         for item in sorted_condensed_inventory:
             row = self.table.rowCount()
             self.table.insertRow(row)
-            # TODO - need a user defined mapping between header_labels and attributes, else can be buggy when
-            # they don't line up
-            for i in range(len(self.header_labels)):
-                attr = self.attributes[i]
+            for i, header in enumerate(self.header_labels):
+                attr = self.ItemClass.getAttributeNameFromHeader(header)
                 self.table.setItem(row, i, QTableWidgetItem(str(item[attr])))
             self.table.setItem(row, len(self.header_labels), QTableWidgetItem(str(item["total_qty"])))
             self.table.setItem(row, len(self.header_labels) + 1, QTableWidgetItem(item["most_recent_expiry"]))
@@ -365,12 +360,16 @@ class Inventory:
                 expiry_date = datetime.strptime(item["most_recent_expiry"], "%Y-%m-%d")
             except Exception:
                 expiry_date = None
+            status_emoji = ""
             status = ""
             if item["total_qty"] <= self.low_quantity:
-                status = "⚠ Low Stock"
+                status_emoji = "⚠"
+                status = "Low Stock"
             if expiry_date and (expiry_date - now).days < self.days_from_expiry:
-                if status:
-                    status += ", Expiring Soon"
+                if expiry_date < now:
+                    status_emoji = "❌"
+                    status = ", ".join([status, "Expired"])
                 else:
-                    status = "⚠ Expiring Soon"
-            self.table.setItem(row, len(self.header_labels) + 3, QTableWidgetItem(status))
+                    status_emoji = "❗"
+                    status = ", ".join([status, "Expiring Soon"])
+            self.table.setItem(row, len(self.header_labels) + 3, QTableWidgetItem(f"{status_emoji} {status}"))

@@ -12,6 +12,24 @@ class Implant(Item):
         self.platform = platform
         self.width = width
         self.length = length
+    
+    @classmethod
+    def getAttributeFromHeader(cls, header):
+        return super().getAttributeFromHeader(header) or {
+            "Type": cls.type_,
+            "Platform": cls.platform,
+            "Width": cls.width,
+            "Length": cls.length
+        }.get(header, None)
+
+    @classmethod
+    def getAttributeNameFromHeader(cls, header):
+        return super().getAttributeNameFromHeader(header) or {
+            "Type": "type_",
+            "Platform": "platform",
+            "Width": "width",
+            "Length": "length"
+        }.get(header, None)
 
 class AddImplantDialog(AddDialog):
     def __init__(self, parent=None, title="Add Implant"):
@@ -90,7 +108,8 @@ class AddImplantDialog(AddDialog):
                 self.type_input = QComboBox()
                 self.type_input.addItems([
                     "NobelActive TiUltra",
-                    "NobelParallel TiUltra"
+                    "NobelParallel TiUltra",
+                    "NobelParallel TiUnite"
                 ])
                 self.type_input.setCurrentText("NobelActive TiUltra")
                 self.type_input.currentTextChanged.connect(self._set_dynamic_platform_widget)
@@ -112,7 +131,7 @@ class AddImplantDialog(AddDialog):
                     self.platform_input.addItems(["3.0", "NP", "RP", "WP"])
                     self.platform_input.setCurrentText("3.0")
                     self.platform_input.currentTextChanged.connect(self._set_dynamic_width_widget)
-                case "NobelParallel TiUltra":
+                case "NobelParallel TiUltra" | "NobelParallel TiUnite":
                     self.platform_input = QComboBox()
                     self.platform_input.addItems(["NP", "RP", "WP"])
                     self.platform_input.setCurrentText("NP")
@@ -146,7 +165,7 @@ class AddImplantDialog(AddDialog):
                             self.width_input.setCurrentText("3.5")
                             self.width_input.setDisabled(True)
                             self.width_input.currentTextChanged.connect(self._set_dynamic_length_widget)
-                        case "NobelParallel TiUltra":
+                        case "NobelParallel TiUltra" | "NobelParallel TiUnite":
                             self.width_input = QComboBox()
                             self.width_input.addItems(["3.75"])
                             self.width_input.setCurrentText("3.75")
@@ -198,7 +217,7 @@ class AddImplantDialog(AddDialog):
                             self.length_input = QComboBox()
                             self.length_input.addItems(["8.5", "10.0", "11.5", "13", "15", "18"])
                             self.length_input.setCurrentText("8.5")
-                        case "NobelParallel TiUltra":
+                        case "NobelParallel TiUltra" | "NobelParallel TiUnite":
                             self.length_input = QComboBox()
                             self.length_input.addItems(["7.0", "8.5", "10.0", "11.5", "13", "15", "18"])
                             self.length_input.setCurrentText("7.0")

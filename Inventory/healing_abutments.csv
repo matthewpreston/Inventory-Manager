@@ -1,15 +1,10 @@
 brand,type_,platform,width,height,REF,LOT,Expiry,Qty
 Nobel,Single-unit,NP,3.6,5,36640,13179104,2027-08-19,1
-Nobel,Single-unit,WP,5,3,37813,12211236,2025-10-15,2
 Nobel,Single-unit,WP,5,5,37814,12248607,2027-07-16,2
-Nobel,Single-unit,WP,6.5,3,37815,12214773,2025-12-15,2
-Nobel,Single-unit,RP,5,5,36646,13187165,2028-01-27,3
-Nobel,Single-unit,RP,6,5,36648,13185176,2027-12-31,7
+Nobel,Single-unit,RP,5,5,36646,13187165,2028-01-27,7
+Nobel,Single-unit,RP,6,5,36648,13185176,2027-12-31,2
 Nobel,Multiple-unit,NP,4,3,36864,13162476,2026-11-13,1
-Nobel,Multiple-unit,RP,5,3,36869,13144925,2026-01-15,2
-Nobel,Multiple-unit,WP,6,3,37817,12199491,2025-04-08,2
 Nobel,Single-unit,WP,6.5,5,37816,12219835,2026-03-12,1
-Nobel,Single-unit,RP,5,5,36646,13187165,2028-01-27,5
 Nobel,Single-unit,RP,5,5,36646,13180762,2027-09-17,1
 Nobel,Single-unit,RP,5,3,36645,13180063,2027-09-05,1
 Nobel,Single-unit,WP,6,5,29447,13179820,2027-08-31,1
