@@ -1,3 +1,4 @@
+import os
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QMessageBox, QTabWidget
@@ -10,12 +11,14 @@ from temporaryAbutments import TemporaryAbutmentInventory
 from boneGrafts import BoneGraftInventory
 from membranes import MembraneInventory
 
-IMPLANTS_FILE = "Inventory/implants.csv"
-HEALING_ABUTMENTS_FILE = "Inventory/healing_abutments.csv"
-COVER_SCREWS_FILE = "Inventory/cover_screws.csv"
-TEMPORARY_ABUTMENTS_FILE = "Inventory/temporary_abutments.csv"
-BONE_GRAFTS_FILE = "Inventory/bone_grafts.csv"
-MEMBRANES_FILE = "Inventory/membranes.csv"
+THIS_FILE_PATH = os.path.dirname(os.path.abspath(__file__))
+
+IMPLANTS_FILE = os.path.join(THIS_FILE_PATH, "Inventory", "implants.csv")
+HEALING_ABUTMENTS_FILE = os.path.join(THIS_FILE_PATH, "Inventory", "healing_abutments.csv")
+COVER_SCREWS_FILE = os.path.join(THIS_FILE_PATH, "Inventory", "cover_screws.csv")
+TEMPORARY_ABUTMENTS_FILE = os.path.join(THIS_FILE_PATH, "Inventory", "temporary_abutments.csv")
+BONE_GRAFTS_FILE = os.path.join(THIS_FILE_PATH, "Inventory", "bone_grafts.csv")
+MEMBRANES_FILE = os.path.join(THIS_FILE_PATH, "Inventory", "membranes.csv")
 IMPLANTS_LOW_QUANTITY = 1
 HEALING_ABUTMENTS_LOW_QUANTITY = 2
 COVER_SCREWS_LOW_QUANTITY = 2
