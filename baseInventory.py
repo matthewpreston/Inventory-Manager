@@ -21,7 +21,8 @@ class Inventory:
             attributes: list[str],
             item_name: str="Item",
             low_quantity: int=2,
-            days_from_expiry: int=180
+            days_from_expiry: int=180,
+            days_from_expiry_warning: int=60
         ):
         self.inventory_file = inventory_file
         self.ItemClass = ItemClass
@@ -35,6 +36,7 @@ class Inventory:
         self.item_name = item_name.lower()
         self.low_quantity = low_quantity
         self.days_from_expiry = days_from_expiry
+        self.days_from_expiry_warning = days_from_expiry_warning
 
         self.inventory: list[Item] = []
         self.selected_row = None
@@ -365,11 +367,14 @@ class Inventory:
             if item["total_qty"] <= self.low_quantity:
                 status_emoji = "⚠"
                 status = "Low Stock"
-            if expiry_date and (expiry_date - now).days < self.days_from_expiry:
+            if expiry_date and (expiry_date - now).days < self.days_from_expiry + self.days_from_expiry_warning:
                 if expiry_date < now:
-                    status_emoji = "❌"
+                    status_emoji = "☠️"
                     status = ", ".join([status, "Expired"])
+                elif (expiry_date - now).days < self.days_from_expiry:
+                    status_emoji = "❌"
+                    status = ", ".join([status, "Expiring Soon"])
                 else:
                     status_emoji = "❗"
-                    status = ", ".join([status, "Expiring Soon"])
+                    status = ", ".join([status, "Expiry Warning"])
             self.table.setItem(row, len(self.header_labels) + 3, QTableWidgetItem(f"{status_emoji} {status}"))

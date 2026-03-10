@@ -286,7 +286,8 @@ class ImplantInventory(Inventory):
             self,
             inventory_file: str,
             low_quantity: int=2,
-            days_from_expiry: int=180
+            days_from_expiry: int=180,
+            days_from_expiry_warning: int=60
         ):
         super().__init__(
             inventory_file=inventory_file,
@@ -302,5 +303,6 @@ class ImplantInventory(Inventory):
             ],
             item_name="implant",
             low_quantity=low_quantity,
-            days_from_expiry=days_from_expiry
+            days_from_expiry=days_from_expiry,
+            days_from_expiry_warning=days_from_expiry_warning
         )

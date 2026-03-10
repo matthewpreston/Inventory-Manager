@@ -26,6 +26,7 @@ TEMPORARY_ABUTMENTS_LOW_QUANTITY = 2
 BONE_GRAFTS_LOW_QUANTITY = 2
 MEMBRANES_LOW_QUANTITY = 2
 DAYS_FROM_EXPIRY = 180
+DAYS_FROM_EXPIRY_WARNING = 60
 
 class InventoryManager(QWidget):
     def __init__(self):
@@ -37,32 +38,38 @@ class InventoryManager(QWidget):
             "Implants": ImplantInventory(
                 inventory_file=IMPLANTS_FILE,
                 low_quantity=IMPLANTS_LOW_QUANTITY,
-                days_from_expiry=DAYS_FROM_EXPIRY
+                days_from_expiry=DAYS_FROM_EXPIRY,
+                days_from_expiry_warning=DAYS_FROM_EXPIRY_WARNING
             ),
             "Healing Abutments": HealingAbutmentInventory(
                 inventory_file=HEALING_ABUTMENTS_FILE,
                 low_quantity=HEALING_ABUTMENTS_LOW_QUANTITY,
-                days_from_expiry=DAYS_FROM_EXPIRY
+                days_from_expiry=DAYS_FROM_EXPIRY,
+                days_from_expiry_warning=DAYS_FROM_EXPIRY_WARNING
             ),
             "Cover Screws": CoverScrewInventory(
                 inventory_file=COVER_SCREWS_FILE,
                 low_quantity=COVER_SCREWS_LOW_QUANTITY,
-                days_from_expiry=DAYS_FROM_EXPIRY
+                days_from_expiry=DAYS_FROM_EXPIRY,
+                days_from_expiry_warning=DAYS_FROM_EXPIRY_WARNING
             ),
             "Temporary Abutments": TemporaryAbutmentInventory(
                 inventory_file=TEMPORARY_ABUTMENTS_FILE,
                 low_quantity=TEMPORARY_ABUTMENTS_LOW_QUANTITY,
-                days_from_expiry=DAYS_FROM_EXPIRY
+                days_from_expiry=DAYS_FROM_EXPIRY,
+                days_from_expiry_warning=DAYS_FROM_EXPIRY_WARNING
             ),
             "Bone Grafts": BoneGraftInventory(
                 inventory_file=BONE_GRAFTS_FILE,
                 low_quantity=BONE_GRAFTS_LOW_QUANTITY,
-                days_from_expiry=DAYS_FROM_EXPIRY
+                days_from_expiry=DAYS_FROM_EXPIRY,
+                days_from_expiry_warning=DAYS_FROM_EXPIRY_WARNING
             ),
             "Membranes": MembraneInventory(
                 inventory_file=MEMBRANES_FILE,
                 low_quantity=MEMBRANES_LOW_QUANTITY,
-                days_from_expiry=DAYS_FROM_EXPIRY
+                days_from_expiry=DAYS_FROM_EXPIRY,
+                days_from_expiry_warning=DAYS_FROM_EXPIRY_WARNING
             )
         }
 
